@@ -8,6 +8,9 @@
 //   service worker modifié, prépare le nouveau cache, et l'application
 //   propose « Recharger ». Les anciens caches de CETTE application sont
 //   alors supprimés (jamais ceux des autres applications du même site).
+// - Le dictionnaire du correcteur orthographique (gros fichier, dont le nom
+//   change avec sa version) est repris de l'ancien cache s'il y est déjà :
+//   une mise à jour de l'application ne le retélécharge pas.
 
 importScripts('js/config.js');
 
@@ -26,6 +29,14 @@ const FICHIERS = [
   'css/base.css',
   'css/redaction.css',
   'css/print.css',
+  'correcteur/correcteur.css',
+  'correcteur/correcteur.js',
+  'correcteur/moteur.js',
+  'correcteur/travailleur.js',
+  'correcteur/bulle.js',
+  'correcteur/liste.js',
+  'correcteur/mots-fr-7.5.txt',
+  'correcteur/LICENCE-dictionnaire.txt',
   'js/config.js',
   'js/app.js',
   'js/barre-outils.js',
@@ -39,6 +50,7 @@ const FICHIERS = [
   'js/importer.js',
   'js/impression.js',
   'js/mise-en-forme.js',
+  'js/orthographe.js',
   'js/palettes.js',
   'js/paragraphes.js',
   'js/pwa.js',
@@ -82,15 +94,35 @@ const FICHIERS = [
   'fonts/jetbrains-mono-latin-ext-700-italic.woff2',
 ];
 
+// Fichiers repris de l'ancien cache quand ils y sont (leur nom change à
+// chaque nouvelle version de leur contenu).
+const DURABLES = new Set(['correcteur/mots-fr-7.5.txt']);
+
 self.addEventListener('install', (evenement) => {
   evenement.waitUntil(
-    caches.open(CACHE).then((cache) =>
+    (async () => {
+      const cache = await caches.open(CACHE);
+      const aTelecharger = [];
+      for (const url of FICHIERS) {
+        const ancien = DURABLES.has(url) ? await dansUnAncienCache(url) : null;
+        if (ancien) await cache.put(url, ancien);
+        else aTelecharger.push(url);
+      }
       // « reload » : on contourne le cache HTTP pour être sûr d'avoir les
       // fichiers de la nouvelle version.
-      cache.addAll(FICHIERS.map((url) => new Request(url, { cache: 'reload' }))),
-    ),
+      await cache.addAll(aTelecharger.map((url) => new Request(url, { cache: 'reload' })));
+    })(),
   );
 });
+
+async function dansUnAncienCache(url) {
+  for (const nom of await caches.keys()) {
+    if (!nom.startsWith(PREFIXE) || nom === CACHE) continue;
+    const reponse = await (await caches.open(nom)).match(url);
+    if (reponse) return reponse;
+  }
+  return null;
+}
 
 self.addEventListener('activate', (evenement) => {
   evenement.waitUntil(

@@ -91,7 +91,8 @@ test('chaque bouton a un nom en français, l’enregistrement est annoncé', asy
   await expect(page.locator('#etat-enregistrement')).toHaveAttribute('role', 'status');
   await expect(page.locator('#feuille')).toHaveAttribute('role', 'textbox');
   await expect(page.locator('#feuille')).toHaveAttribute('lang', 'fr');
-  await expect(page.locator('#feuille')).toHaveAttribute('spellcheck', 'true');
+  // Le correcteur de l'application remplace celui du navigateur (pas de double soulignement).
+  await expect(page.locator('#feuille')).toHaveAttribute('spellcheck', 'false');
 });
 
 test('sur ordinateur, la barre d’outils passe à la ligne : pas de flèches de défilement', async ({ page }) => {

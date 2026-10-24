@@ -1,0 +1,12 @@
+{
+  "name": "omni-texte-dictionnaire",
+  "private": true,
+  "description": "Fabrique la liste de mots du correcteur orthographique (voir construire.mjs).",
+  "type": "module",
+  "scripts": {
+    "construire": "node construire.mjs"
+  },
+  "devDependencies": {
+    "nspell": "2.1.5"
+  }
+}

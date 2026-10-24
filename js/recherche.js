@@ -39,8 +39,10 @@ function simplifierTexte(texte) {
  * nœud de texte, sa place dans le texte simplifié (et, s'il contient des
  * caractères invisibles, la position d'origine de chaque caractère gardé).
  * Un saut de ligne (<br>) coupe la recherche.
+ * Avec `simplifie = false`, le texte est gardé tel quel (majuscules
+ * comprises) : c'est ce que lit le correcteur orthographique.
  */
-function indexerBloc(bloc) {
+export function indexerBloc(bloc, simplifie = true) {
   let texte = '';
   const morceaux = [];
   const marcheur = document.createTreeWalker(bloc, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
@@ -55,14 +57,14 @@ function indexerBloc(bloc) {
         visible = visible.replaceAll(INVISIBLE, '');
       }
       morceaux.push({ debut: texte.length, noeud: n, decalages });
-      texte += simplifierTexte(visible);
+      texte += simplifie ? simplifierTexte(visible) : visible;
     }
   }
   return { texte, morceaux };
 }
 
 /** Nœud de texte et position correspondant au caractère n° `index` du texte simplifié. */
-function pointDuTexte(morceaux, index) {
+export function pointDuTexte(morceaux, index) {
   let bas = 0;
   let haut = morceaux.length - 1;
   while (bas < haut) {

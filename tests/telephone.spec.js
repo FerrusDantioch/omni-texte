@@ -199,3 +199,26 @@ test('captures d’écran sur téléphone (contrôle visuel)', async ({ page }, 
   await page.waitForTimeout(300);
   await page.screenshot({ path: infos.outputPath('telephone-documents.png') });
 });
+
+test('au doigt : toucher un mot souligné ouvre une bulle lisible, aux grandes zones à toucher', async ({ page }, infos) => {
+  await remplir(page, '<p>Il était une fois une maizon au bord de la mer.</p>');
+  await page.evaluate(() => document.getElementById('feuille').dispatchEvent(new InputEvent('input', { inputType: 'insertText' })));
+  await expect.poll(() => page.evaluate(() => [...(CSS.highlights.get('correcteur-faute') ?? [])].map((p) => p.toString()))).toEqual(['maizon']);
+  const point = await page.evaluate(() => {
+    const b = [...CSS.highlights.get('correcteur-faute')][0].getBoundingClientRect();
+    return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+  });
+  await page.touchscreen.tap(point.x, point.y);
+  const bulle = page.locator('.correcteur-bulle');
+  await expect(bulle).toBeVisible();
+  await expect(bulle.locator('.correcteur-suggestion').first()).toHaveText('maison');
+  const boite = await bulle.boundingBox();
+  expect(boite.x).toBeGreaterThanOrEqual(0);
+  expect(boite.x + boite.width).toBeLessThanOrEqual(390);
+  const petits = await bulle.locator('button').evaluateAll((liste) => liste.filter((b) => b.getBoundingClientRect().height < 44).length);
+  expect(petits).toBe(0);
+  await page.screenshot({ path: infos.outputPath('telephone-correcteur.png') });
+  await bulle.locator('.correcteur-suggestion').first().tap();
+  expect(await contenu(page)).toBe('<p>Il était une fois une maison au bord de la mer.</p>');
+  expect(await page.evaluate(() => document.activeElement.id)).toBe('feuille');
+});

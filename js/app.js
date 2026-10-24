@@ -13,6 +13,7 @@ import { initialiserFenetres, ouvrirFenetre, demander, informer, afficherMessage
 import { ExportPdf } from './impression.js';
 import { Exporteur } from './exporter.js';
 import { Recherche } from './recherche.js';
+import { Orthographe, correctionPossible } from './orthographe.js';
 import { lireFichier, ErreurOuverture } from './importer.js';
 import { demarrerServiceWorker, estInstallee, installationPossible, installer, surChangementInstallation } from './pwa.js';
 
@@ -35,12 +36,14 @@ async function demarrer() {
   const feuille = $('feuille');
   let documents = null;
   let recherche = null;
+  let orthographe = null;
   const compteur = creerCompteur($('compteur'));
   const editeur = new Editeur(feuille, {
     surModification: () => {
       documents?.signalerModification();
       compteur.planifier(editeur);
       recherche?.planifier();
+      orthographe?.planifier({ frappe: true });
     },
   });
   const barre = new BarreOutils({ barre: $('barre-outils'), editeur });
@@ -54,6 +57,17 @@ async function demarrer() {
     editeur.typographie = caseTypographie.checked;
     preferences.ecrire('typographie', caseTypographie.checked);
   });
+  // Correction orthographique : activée par défaut (voir js/orthographe.js).
+  orthographe = new Orthographe({ editeur, zone: $('zone-ecriture'), preferences });
+  const caseOrthographe = $('case-orthographe');
+  caseOrthographe.checked = orthographe.actif;
+  if (!correctionPossible) {
+    caseOrthographe.disabled = true;
+    $('bouton-dictionnaire').disabled = true;
+    $('detail-orthographe').textContent = "Ce navigateur ne permet pas la correction intégrée : c'est son propre correcteur qui reste utilisé.";
+  }
+  caseOrthographe.addEventListener('change', () => orthographe.correcteur.activer(caseOrthographe.checked));
+
   recherche = new Recherche({
     panneau: $('panneau-recherche'),
     bouton: $('bouton-rechercher'),
@@ -74,6 +88,7 @@ async function demarrer() {
     surAffichage: () => {
       compteur.planifier(editeur, true);
       recherche.planifier();
+      orthographe.planifier({ immediat: true, frappe: false });
     },
   });
   await documents.demarrer();
@@ -166,6 +181,13 @@ async function demarrer() {
     if (await installer()) $('fenetre-installation').close();
   });
   surChangementInstallation(preparerAideInstallation);
+  const fenetreDictionnaire = $('fenetre-dictionnaire');
+  let arreterDictionnaire = null;
+  $('bouton-dictionnaire').addEventListener('click', (e) => {
+    arreterDictionnaire = orthographe.afficherDictionnaire($('contenu-dictionnaire'));
+    ouvrirFenetre(fenetreDictionnaire, { declencheur: e.currentTarget, repli: boutonMenu });
+  });
+  fenetreDictionnaire.addEventListener('close', () => arreterDictionnaire?.());
   $('bouton-a-propos').addEventListener('click', (e) => {
     ouvrirFenetre($('fenetre-a-propos'), { declencheur: e.currentTarget, repli: boutonMenu });
   });

@@ -193,6 +193,24 @@
   color: var(--accent-texte);
 }
 
+/* Correcteur orthographique (correcteur/correcteur.css) : couleurs du thème */
+:root {
+  --correcteur-fond: var(--surface);
+  --correcteur-texte: var(--texte);
+  --correcteur-discret: var(--discret);
+  --correcteur-trait: var(--trait);
+  --correcteur-accent: var(--accent);
+  --correcteur-survol: var(--survol);
+  --correcteur-ombre: var(--ombre);
+  --correcteur-souligne: var(--faute);
+  --correcteur-police: var(--police-interface);
+}
+
+/* Les corrections proposées s'affichent dans la police du document */
+.correcteur-bulle .correcteur-suggestion {
+  font-family: var(--police-document);
+}
+
 @media (max-width: 700px) {
   .resultat-recherche {
     min-width: 0;
