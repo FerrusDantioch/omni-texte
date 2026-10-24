@@ -26,6 +26,11 @@ Adresse : `https://ferrusdantioch.github.io/omni-texte/` (dépôt GitHub `Ferrus
 - Rechercher et remplacer (loupe de la barre d'outils, ou Ctrl+F) : une fois ou partout.
 - Typographie française automatique (réglable dans le menu) : espaces insécables
   avant : ; ! ? et dans les guillemets « », apostrophe ’.
+- Correcteur d'orthographe français intégré, qui fonctionne hors ligne (réglable
+  dans le menu, activé par défaut) : les mots inconnus sont soulignés d'une vague
+  rouge adoucie ; toucher (ou cliquer) un mot souligné propose jusqu'à 5
+  corrections, « Ajouter au dictionnaire » et « Ignorer ». Menu → « Dictionnaire
+  personnel » : voir, ajouter et retirer ses propres mots.
 - Collage toujours en texte brut (chaque ligne devient un paragraphe).
 - Enregistrement automatique, plusieurs documents, compteur de mots et de caractères.
 - Ouvrir un fichier Word (.docx) ou texte (.txt) : il devient un nouveau document.
@@ -259,6 +264,19 @@ Sans changement de version, les utilisateurs gardent l'ancienne version
     titres gardent leur propre interligne, plus serré, tant qu'aucun n'est choisi.
 21. **Barre d'outils** : avec la loupe et l'interligne, elle tient sur une ligne à
     partir d'environ 1 360 pixels de large ; en dessous, elle passe sur deux lignes.
+22. **Correcteur d'orthographe** (version 1.2.0) : commun avec Omni-Romancier
+    (dossier `correcteur/`, voir `correcteur/LISEZ-MOI.md`). Le dictionnaire
+    français de Grammalecte a été « déplié » une fois pour toutes en une liste
+    de 450 000 mots (1,9 Mo, environ 330 Ko une fois compressé) : les bibliothèques
+    Hunspell pour navigateur (nspell, Typo.js) mettaient 6 à 7 secondes et 300 à
+    750 Mo de mémoire à se charger sur un ordinateur, beaucoup trop pour un
+    téléphone. La vérification tourne en arrière-plan (Web Worker) ; les mots
+    sont soulignés sans modifier le document (surlignage CSS), donc
+    l'annulation, l'enregistrement et les exports ne sont pas touchés. Le
+    correcteur du navigateur est éteint sur la feuille pour éviter un double
+    soulignement (il revient si l'on désactive le correcteur de l'application).
+    « Ignorer » vaut jusqu'à la fermeture de l'application. Le dictionnaire
+    personnel est gardé dans le navigateur, séparé de celui d'Omni-Romancier.
 
 ---
 
@@ -276,6 +294,12 @@ Sans changement de version, les utilisateurs gardent l'ancienne version
   (compteur, défilement, remplacement) mais les résultats ne sont pas colorés.
 - Sur un très long document (350 pages), chaque frappe prend environ 20 ms et
   « tout en gras » environ une seconde, sur un ordinateur récent.
+- Le correcteur d'orthographe demande lui aussi un navigateur récent (Chrome 105,
+  Firefox 140 ou plus) ; sinon, c'est le correcteur du navigateur qui reste utilisé.
+  Il ne vérifie que l'orthographe des mots, pas la grammaire ni les accords
+  (« les maison » n'est pas signalé). Ses suggestions ne connaissent pas la
+  fréquence des mots : la bonne correction n'est pas toujours la première.
+- Le dictionnaire personnel n'est pas inclus dans « Sauvegarder tous mes documents ».
 
 ---
 
@@ -290,6 +314,7 @@ css/themes.css         les trois thèmes (seul fichier contenant des couleurs)
 css/base.css           mise en page et composants communs à la suite
 css/redaction.css      barre d'outils, palettes, feuille, compteur
 css/print.css          impression et PDF
+correcteur/            correcteur d'orthographe, commun avec Omni-Romancier (voir son LISEZ-MOI.md)
 js/config.js           nom, version, contact (à modifier ici)
 js/app.js              assemblage de l'application
 js/theme.js            thèmes                                  (commun à la suite)
@@ -303,6 +328,7 @@ js/paragraphes.js      titres, listes, alignement, structure
 js/historique.js       Annuler / Rétablir
 js/recherche.js        rechercher et remplacer
 js/typographie.js      typographie française automatique
+js/orthographe.js      correcteur d'orthographe : soulignement dans la feuille
 js/sanitize.js         nettoyage par liste blanche
 js/palettes.js         tailles, polices et couleurs proposées
 js/barre-outils.js     barre d'outils
@@ -318,7 +344,8 @@ js/zip.js              fabrication et lecture d'archives ZIP (commun à la suite
 fonts/                 polices (.woff2) et leurs licences
 icons/                 icônes de l'application
 assets/                logo de l'Omni-système
-outils/                serveur local, création des icônes
+outils/                serveur local, création des icônes, copie du correcteur
+                       vers Omni-Romancier, fabrication du dictionnaire (outils/dictionnaire/)
 tests/                 tests automatiques
 ```
 
@@ -370,18 +397,17 @@ L'analyse du PDF demande aussi Python 3 avec `pdfplumber` et `pypdfium2`
 20. Ouvrir un fichier Word venant de Google Docs (Fichier → Télécharger → Microsoft Word) : le texte et sa mise en forme apparaissent.
 21. Android : pendant la frappe, le clavier ouvert, la barre d'outils reste visible et défile au doigt.
 22. Android : Menu → Installer l'application ; l'icône violette apparaît sur l'écran d'accueil.
+23. Taper « Les maizons sont bele. » : après une demi-seconde, « maizons » et « bele » sont soulignés d'une vague rouge.
+24. Toucher « maizons » : une bulle propose « maisons » ; la toucher remplace le mot, le clavier reste ouvert.
+25. Taper « Kaelith », le toucher, « Ajouter au dictionnaire » : il n'est plus souligné. Fermer l'application, la rouvrir : il ne l'est toujours pas. Menu → Dictionnaire personnel : il y figure, « Retirer » le fait de nouveau souligner.
+26. Mode avion, recharger, taper « une biblioteque » : le mot est souligné et la bulle propose « bibliothèque ».
 
 ---
 
 ## 11. Idées pour plus tard
 
-- **Correcteur d'orthographe français intégré à Omni-Texte**, qui fonctionne sans
-  connexion et ne dépend pas des réglages du navigateur. Aujourd'hui, Omni-Texte
-  demande au navigateur de souligner les fautes en français (`spellcheck` et
-  `lang="fr"`) ; cela ne marche que si le navigateur ou le clavier du téléphone
-  a le dictionnaire français activé. À prévoir : un dictionnaire français libre
-  (environ 2 à 4 Mo, téléchargé une fois puis gardé pour le mode hors ligne) et
-  des suggestions de correction au toucher ou au clic droit.
+- Correcteur : inclure le dictionnaire personnel dans « Sauvegarder tous mes
+  documents », et tenir compte de la fréquence des mots dans les suggestions.
 
 ---
 
@@ -400,6 +426,13 @@ Commons.
 
 Les polices (dossier `fonts/`) gardent leur propre licence : voir les fichiers
 `fonts/LICENCE-*.txt`.
+
+Le dictionnaire du correcteur (`correcteur/mots-fr-7.5.txt`) est tiré des
+« Dictionnaires orthographiques français » 7.5 (variante « Classique ») d'Olivier R.
+et des contributeurs de [Grammalecte](https://grammalecte.net/) (Dicollecte). Il
+reste sous sa propre licence, la **Mozilla Public License 2.0** : texte complet et
+provenance dans `correcteur/LICENCE-dictionnaire.txt`. Les fichiers d'origine sont
+dans `outils/dictionnaire/source/`.
 
 ---
 

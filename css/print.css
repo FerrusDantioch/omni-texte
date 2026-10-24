@@ -63,6 +63,15 @@ dialog {
   color: inherit;
 }
 
+/* Le soulignement des mots inconnus non plus, ni la bulle de suggestions. */
+::highlight(correcteur-faute) {
+  text-decoration: none;
+}
+
+.correcteur-bulle {
+  display: none !important;
+}
+
 /* Les surlignages et couleurs s'impriment tels quels. */
 .feuille,
 .feuille * {

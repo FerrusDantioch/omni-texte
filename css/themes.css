@@ -31,6 +31,7 @@
   --ombre: 0 14px 36px rgb(0 0 0 / 0.45);
   --danger: #ff8a93;        /* bouton « Supprimer » */
   --danger-texte: #1f0a0d;
+  --faute: #d98a93;          /* soulignement des mots inconnus (correcteur), adouci */
   --texte-surligne: #14111d; /* texte posé sur un surlignage */
   color-scheme: dark;
 }
@@ -53,6 +54,7 @@
   --ombre: 0 14px 36px rgb(0 0 0 / 0.5);
   --danger: #ff8f8f;
   --danger-texte: #200b0b;
+  --faute: #d9898c;          /* soulignement des mots inconnus (correcteur), adouci */
   --texte-surligne: #14111d;
   color-scheme: dark;
 }
@@ -75,6 +77,7 @@
   --ombre: 0 14px 36px rgb(28 26 36 / 0.18);
   --danger: #c42b3b;
   --danger-texte: #ffffff;
+  --faute: #b8505c;          /* soulignement des mots inconnus (correcteur), adouci */
   --texte-surligne: #14111d;
   color-scheme: light;
 }

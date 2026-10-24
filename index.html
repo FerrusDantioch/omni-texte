@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="css/themes.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/redaction.css">
+  <link rel="stylesheet" href="correcteur/correcteur.css">
   <link rel="stylesheet" href="css/print.css" media="print">
   <script src="js/config.js"></script>
   <script>
@@ -79,6 +80,7 @@
     <symbol id="i-sauvegarder" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14"/></symbol>
     <symbol id="i-restaurer" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 20h14"/></symbol>
     <symbol id="i-installer" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3"/></symbol>
+    <symbol id="i-dictionnaire" viewBox="0 0 24 24"><path d="M5 19.5v-15A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5 1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="m9 10.5 2 2 4-4"/></symbol>
     <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.6h.01"/></symbol>
   </svg>
 
@@ -311,6 +313,15 @@
         Typographie française automatique
       </label>
       <p id="detail-typographie" class="texte-discret">Espace insécable avant : ; ! ? et à l'intérieur des « », apostrophe ’ au lieu de '.</p>
+      <label class="case-a-cocher">
+        <input id="case-orthographe" type="checkbox" aria-describedby="detail-orthographe">
+        Correction orthographique
+      </label>
+      <p id="detail-orthographe" class="texte-discret">Les mots inconnus sont soulignés ; touche-en un pour voir les corrections. Fonctionne hors ligne.</p>
+      <button id="bouton-dictionnaire" class="bouton bouton-discret" type="button" aria-haspopup="dialog">
+        <svg class="icone" aria-hidden="true"><use href="#i-dictionnaire"></use></svg>
+        Dictionnaire personnel
+      </button>
     </div>
     <div class="menu-section">
       <p class="etiquette">Mes documents</p>
@@ -419,6 +430,20 @@
     </div>
   </dialog>
 
+  <!-- Dictionnaire personnel (rempli par correcteur/liste.js) -->
+  <dialog id="fenetre-dictionnaire" aria-labelledby="titre-dictionnaire">
+    <div class="fenetre-entete">
+      <h2 id="titre-dictionnaire">Dictionnaire personnel</h2>
+      <button class="bouton bouton-icone bouton-discret" type="button" data-fermer aria-label="Fermer" title="Fermer">
+        <svg class="icone" aria-hidden="true"><use href="#i-fermer"></use></svg>
+      </button>
+    </div>
+    <div class="fenetre-corps" id="contenu-dictionnaire"></div>
+    <div class="fenetre-actions">
+      <button class="bouton" type="button" data-fermer>Fermer</button>
+    </div>
+  </dialog>
+
   <!-- À propos -->
   <dialog id="fenetre-a-propos" aria-labelledby="titre-a-propos">
     <div class="fenetre-corps a-propos">
@@ -429,6 +454,8 @@
       <!-- Licence du code : texte complet dans le fichier LICENSE du dépôt. -->
       <p>© 2026 Ferrus Dantioch — <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/deed.fr" target="_blank" rel="noopener noreferrer">Creative Commons BY-NC-ND 4.0</a> : partage autorisé en citant l'auteur, sans usage commercial ni modification.</p>
       <p>Tes documents restent sur cet appareil. Aucun compte, aucune donnée envoyée.</p>
+      <!-- Le dictionnaire du correcteur a sa propre licence (MPL 2.0) : voir correcteur/LICENCE-dictionnaire.txt. -->
+      <p class="texte-discret">Correcteur orthographique : dictionnaire français « Classique » 7.5 d'Olivier R. et des contributeurs de <a href="https://grammalecte.net/" target="_blank" rel="noopener noreferrer">Grammalecte</a> (Dicollecte), sous licence <a href="correcteur/LICENCE-dictionnaire.txt" target="_blank" rel="noopener">Mozilla Public License 2.0</a>.</p>
       <p>Une idée, une remarque, un souci ? Tes retours sont les bienvenus : <a class="contact" href="mailto:"></a></p>
       <p><a class="lien-omni" href="#" target="_blank" rel="noopener">Découvrir l'Omni-système</a></p>
     </div>

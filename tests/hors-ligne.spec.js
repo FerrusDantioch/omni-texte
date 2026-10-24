@@ -90,9 +90,10 @@ test('la liste des fichiers mis en cache correspond exactement aux fichiers de l
   const sw = await readFile(`${RACINE}/sw.js`, 'utf8');
   const liste = [...sw.match(/const FICHIERS = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
   const surLeDisque = ['index.html', 'manifest.webmanifest'];
-  for (const [dossier, extension] of [['css', '.css'], ['js', '.js'], ['fonts', '.woff2'], ['icons', '.png'], ['assets', '']]) {
+  for (const [dossier, extension] of [['css', '.css'], ['js', '.js'], ['fonts', '.woff2'], ['icons', '.png'], ['assets', ''], ['correcteur', '']]) {
     for (const nom of await readdir(`${RACINE}/${dossier}`)) {
-      if (nom.endsWith(extension)) surLeDisque.push(`${dossier}/${nom}`);
+      // (le mode d'emploi du correcteur n'est pas utile hors ligne)
+      if (nom.endsWith(extension) && nom !== 'LISEZ-MOI.md') surLeDisque.push(`${dossier}/${nom}`);
     }
   }
   expect(liste.filter((f) => f !== './').sort()).toEqual(surLeDisque.sort());
@@ -112,7 +113,9 @@ test('le nom de l’application est le même dans config.js et dans le manifeste
 
 test('aucun chemin absolu ni ressource externe dans les fichiers de l’application', async () => {
   const fichiers = ['index.html', 'manifest.webmanifest', 'sw.js'];
-  for (const dossier of ['css', 'js']) for (const nom of await readdir(`${RACINE}/${dossier}`)) fichiers.push(`${dossier}/${nom}`);
+  for (const dossier of ['css', 'js', 'correcteur']) {
+    for (const nom of await readdir(`${RACINE}/${dossier}`)) if (/\.(js|css)$/.test(nom)) fichiers.push(`${dossier}/${nom}`);
+  }
   for (const fichier of fichiers) {
     const texte = await readFile(`${RACINE}/${fichier}`, 'utf8');
     expect(texte, fichier).not.toMatch(/(?:src|href)="\/(?!\/)/);
