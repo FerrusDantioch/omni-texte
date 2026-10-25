@@ -2,12 +2,22 @@
 // alignement, et réparation de la structure du document.
 //
 // Structure attendue de la feuille : une suite de <p>, <h1>, <h2>, <h3>,
-// <ul> et <ol> (ces deux derniers ne contenant que des <li>).
+// <ul> et <ol> (ces deux derniers ne contenant que des <li>), et de <hr>,
+// les sauts de page (voir estSautDePage).
 
 import { estListe, estEnLigne, INVISIBLE } from './selection.js';
 import { isoler, deballer } from './mise-en-forme.js';
 
-const BALISES_HAUT_NIVEAU = new Set(['P', 'H1', 'H2', 'H3', 'UL', 'OL']);
+const BALISES_HAUT_NIVEAU = new Set(['P', 'H1', 'H2', 'H3', 'UL', 'OL', 'HR']);
+
+/**
+ * Un saut de page est un <hr>, toujours placé directement dans la feuille
+ * (jamais dans un paragraphe). Il ne contient aucun texte : le libellé
+ * « Saut de page » affiché à l'écran est dessiné par la feuille de style
+ * (css/redaction.css). Le correcteur, la recherche et le compteur de mots,
+ * qui ne lisent que le texte, ne le voient donc jamais.
+ */
+export const estSautDePage = (n) => n?.nodeName === 'HR';
 
 /** Recopie les réglages de paragraphe (alignement, interligne) d'un bloc à l'autre. */
 export function copierReglagesBloc(source, cible) {
@@ -161,7 +171,9 @@ export function reparerStructure(racine) {
       change = true;
     }
   }
-  if (!racine.firstChild) {
+  // Toujours un paragraphe après le dernier saut de page, pour pouvoir écrire
+  // sur la nouvelle page (et un document n'est jamais vide).
+  if (!racine.lastElementChild || estSautDePage(racine.lastElementChild)) {
     const p = document.createElement('p');
     p.appendChild(document.createElement('br'));
     racine.appendChild(p);
@@ -195,9 +207,15 @@ function estEspaceEntreBlocs(noeud) {
   return (!avant || BALISES_HAUT_NIVEAU.has(avant.nodeName)) && (!apres || BALISES_HAUT_NIVEAU.has(apres.nodeName));
 }
 
-/** Répare un bloc de haut niveau (paragraphe, titre ou liste). */
+/** Répare un bloc de haut niveau (paragraphe, titre, liste ou saut de page). */
 function reparerBloc(bloc) {
   let change = false;
+  if (estSautDePage(bloc)) {
+    // Un saut de page reste vide (le navigateur y glisse parfois un <br>).
+    if (!bloc.firstChild) return false;
+    bloc.replaceChildren();
+    return true;
+  }
   if (estListe(bloc)) {
     for (let enfant = bloc.firstChild; enfant; ) {
       const suivant = enfant.nextSibling;

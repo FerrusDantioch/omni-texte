@@ -63,6 +63,8 @@
     <symbol id="i-justifier" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></symbol>
     <symbol id="i-liste-puces" viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10"/><circle cx="5" cy="6" r="1.3" fill="currentColor"/><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="5" cy="18" r="1.3" fill="currentColor"/></symbol>
     <symbol id="i-liste-numeros" viewBox="0 0 24 24"><path d="M11 7h9M11 17h9"/><path d="M4.5 5.2 6 4.5v5"/><path d="M4 15a1.5 1.5 0 0 1 3 .3c0 1.2-3 1.8-3 3.7h3"/></symbol>
+    <symbol id="i-saut-de-page" viewBox="0 0 24 24"><path d="M6 3v5h12V3M6 21v-5h12v5"/><path d="M3 12h2.5M8.5 12h2M13.5 12h2M18.5 12H21"/></symbol>
+    <symbol id="i-imprimer" viewBox="0 0 24 24"><path d="M7 9V3h10v6"/><path d="M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7z"/></symbol>
     <symbol id="i-effacer" viewBox="0 0 24 24"><path d="M5 5h11M11 5 8 18"/><path d="m14 14 6 6M20 14l-6 6"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-dupliquer" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
@@ -200,6 +202,16 @@
       <div class="groupe" role="group" aria-label="Nettoyage">
         <button class="bouton bouton-discret" type="button" data-commande="effacer" aria-label="Effacer la mise en forme" title="Effacer la mise en forme de la sélection">
           <svg class="icone" aria-hidden="true"><use href="#i-effacer"></use></svg>
+        </button>
+      </div>
+      <div class="groupe" role="group" aria-label="Mise en page et impression">
+        <button class="bouton bouton-discret bouton-libelle" type="button" data-commande="saut-de-page" title="Insérer un saut de page au curseur (Ctrl+Entrée)">
+          <svg class="icone" aria-hidden="true"><use href="#i-saut-de-page"></use></svg>
+          <span>Saut de page</span>
+        </button>
+        <button id="bouton-imprimer" class="bouton bouton-discret bouton-libelle" type="button" title="Imprimer, ou enregistrer en PDF (Ctrl+P)">
+          <svg class="icone" aria-hidden="true"><use href="#i-imprimer"></use></svg>
+          <span>Imprimer / PDF</span>
         </button>
       </div>
     </div>
@@ -372,7 +384,7 @@
         <button class="option-export" type="button" data-format="pdf" aria-labelledby="nom-pdf" aria-describedby="detail-pdf">
           <svg class="icone" aria-hidden="true"><use href="#i-format-pdf"></use></svg>
           <span id="nom-pdf" class="option-nom">PDF</span>
-          <span id="detail-pdf" class="option-detail">Pour imprimer ou envoyer un document figé.</span>
+          <span id="detail-pdf" class="option-detail">Pour imprimer ou envoyer un document figé. Respecte les sauts de page.</span>
         </button>
         <button class="option-export" type="button" data-format="docx" aria-labelledby="nom-docx" aria-describedby="detail-docx">
           <svg class="icone" aria-hidden="true"><use href="#i-format-word"></use></svg>

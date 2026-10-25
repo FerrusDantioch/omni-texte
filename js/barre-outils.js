@@ -21,6 +21,7 @@ const COMMANDES = {
   'liste-puces': (e) => e.liste('UL'),
   'liste-numeros': (e) => e.liste('OL'),
   effacer: (e) => e.effacerMiseEnForme(),
+  'saut-de-page': (e) => e.insererSautDePage(),
 };
 
 export class BarreOutils {

@@ -90,9 +90,9 @@ test('la liste des fichiers mis en cache correspond exactement aux fichiers de l
   const sw = await readFile(`${RACINE}/sw.js`, 'utf8');
   const liste = [...sw.match(/const FICHIERS = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
   const surLeDisque = ['index.html', 'manifest.webmanifest'];
-  for (const [dossier, extension] of [['css', '.css'], ['js', '.js'], ['fonts', '.woff2'], ['icons', '.png'], ['assets', ''], ['correcteur', '']]) {
+  for (const [dossier, extension] of [['css', '.css'], ['js', '.js'], ['fonts', '.woff2'], ['icons', '.png'], ['assets', ''], ['correcteur', ''], ['commun', '']]) {
     for (const nom of await readdir(`${RACINE}/${dossier}`)) {
-      // (le mode d'emploi du correcteur n'est pas utile hors ligne)
+      // (les modes d'emploi du correcteur et du code commun ne sont pas utiles hors ligne)
       if (nom.endsWith(extension) && nom !== 'LISEZ-MOI.md') surLeDisque.push(`${dossier}/${nom}`);
     }
   }

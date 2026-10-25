@@ -33,6 +33,14 @@
   padding: 0 6px;
 }
 
+/* Boutons avec un libellé écrit (« Saut de page », « Imprimer / PDF »). */
+.barre-outils .bouton-libelle {
+  padding: 0 10px;
+  font-family: var(--police-interface);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
 .bouton-texte-taille {
   font-family: var(--police-interface);
   font-size: 1rem;
@@ -462,6 +470,38 @@
    sauf si l'utilisateur a choisi une couleur pour ce texte. */
 .feuille span[style*="background-color"]:not([style^="color:"]):not([style*=" color:"]) {
   color: var(--texte-surligne);
+}
+
+/* Saut de page (<hr>) : une fine ligne en pointillés avec, au milieu, le
+   libellé « Saut de page » en petit, dans la couleur discrète du thème.
+   Le libellé est dessiné ici (content) : ce n'est pas du texte du document,
+   le correcteur et la recherche ne le voient donc jamais. À l'impression,
+   il disparaît (voir print.css). */
+.feuille > hr {
+  --trait-saut: color-mix(in srgb, var(--discret) 45%, transparent);
+  display: block;
+  height: auto;
+  margin: 1.1em 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  text-align: center;
+  color: var(--discret);
+  font: 500 0.75rem/1.6 var(--police-interface);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  /* La ligne en pointillés, au milieu de la hauteur. */
+  background: repeating-linear-gradient(90deg, var(--trait-saut) 0 5px, transparent 5px 10px) center / 100% 1px no-repeat;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+/* Le libellé, posé sur la ligne (son fond, celui de la feuille, la coupe). */
+.feuille > hr::before {
+  content: "Saut de page";
+  padding: 0 0.75em;
+  background: var(--page);
 }
 
 /* Sur téléphone, la feuille occupe toute la largeur. */

@@ -31,6 +31,7 @@ def main(chemin):
         resultat["hauteur"] = round(page.height, 1)
         resultat["titre"] = pdf.metadata.get("Title")
         resultat["texte"] = "\n".join((p.extract_text() or "") for p in pdf.pages)
+        resultat["textes_pages"] = [(p.extract_text() or "") for p in pdf.pages]
         couleurs = {}
         for p in pdf.pages:
             for car in p.chars:

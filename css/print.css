@@ -88,8 +88,29 @@ dialog {
   break-inside: avoid;
 }
 
+/* Jamais une ligne d'un paragraphe seule en bas ou en haut d'une page :
+   au moins deux lignes en bas, et trois en haut quand le paragraphe est
+   assez long (un paragraphe de quatre lignes est coupé en deux et deux).
+   Ces valeurs ont été vérifiées dans Chrome : avec trois lignes en bas
+   aussi, Chrome, ne pouvant pas couper un paragraphe de quatre lignes en
+   trois et trois, laisse au contraire une ligne seule en haut de page. */
 .feuille p,
 .feuille li {
   orphans: 2;
-  widows: 2;
+  widows: 3;
+}
+
+/* Saut de page : le repère n'apparaît pas sur la feuille, et ce qui le suit
+   commence sur une nouvelle page. Plusieurs sauts à la suite n'en font
+   qu'un, et un saut tout au début ou tout à la fin du texte ne crée pas de
+   page blanche (voir aussi impression.js : les paragraphes vides de la fin
+   ne sont pas imprimés). */
+.feuille > hr {
+  display: none !important;
+}
+
+.feuille > hr + * {
+  break-before: page;
+  page-break-before: always;
+  margin-top: 0;
 }

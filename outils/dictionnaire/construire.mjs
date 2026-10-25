@@ -10,7 +10,7 @@
 // Utilisation, depuis le dossier omni-texte :
 //   cd outils/dictionnaire && npm install && node construire.mjs
 // puis recopier le correcteur dans Omni-Romancier :
-//   node outils/copier-correcteur.mjs
+//   node outils/copier-commun.mjs
 //
 // Le dictionnaire d'origine (dossier source/) est celui de Grammalecte
 // (Dicollecte), variante « Classique » 7.5, sous licence MPL 2.0.

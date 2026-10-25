@@ -141,7 +141,11 @@ async function demarrer() {
     fenetreAide: $('fenetre-aide-pdf'),
     titre: titreDuDocument,
     avant: () => documents.enregistrer(),
+    feuille,
   });
+  // Bouton « Imprimer / PDF » de la barre d'outils : la fenêtre d'impression
+  // du navigateur, d'où l'on peut aussi « Enregistrer au format PDF ».
+  $('bouton-imprimer').addEventListener('click', (e) => exportPdf.exporter(e.currentTarget));
   new Exporteur({
     fenetre: $('fenetre-export'),
     bouton: $('bouton-exporter'),

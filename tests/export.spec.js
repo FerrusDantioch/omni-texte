@@ -42,7 +42,7 @@ test('la fenêtre « Exporter » propose trois formats et se ferme avec Échap',
   await page.click('#bouton-exporter');
   const fenetre = page.locator('#fenetre-export');
   await expect(fenetre).toBeVisible();
-  await expect(fenetre.getByRole('button', { name: 'PDF' })).toHaveAccessibleDescription('Pour imprimer ou envoyer un document figé.');
+  await expect(fenetre.getByRole('button', { name: 'PDF' })).toHaveAccessibleDescription('Pour imprimer ou envoyer un document figé. Respecte les sauts de page.');
   await expect(fenetre.getByRole('button', { name: 'Word (.docx)' })).toHaveAccessibleDescription('Pour continuer le texte dans Word ou Google Docs.');
   await expect(fenetre.getByRole('button', { name: 'Texte brut (.txt)' })).toHaveAccessibleDescription(
     'Le texte seul, sans mise en forme, lisible partout.',

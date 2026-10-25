@@ -123,9 +123,11 @@ function morceauxDe(bloc) {
 
 // --- Paragraphes ----------------------------------------------------------------
 
-function paragraphe(bloc, { style = null, numero = null } = {}) {
+function paragraphe(bloc, { style = null, numero = null, nouvellePage = false } = {}) {
   const p = [];
   if (style) p.push(`<w:pStyle w:val="${style}"/>`);
+  // Saut de page : ce paragraphe commence une nouvelle page.
+  if (nouvellePage) p.push('<w:pageBreakBefore/>');
   if (numero) p.push(`<w:numPr><w:ilvl w:val="0"/><w:numId w:val="${numero}"/></w:numPr>`);
   // Interligne : 240 = une ligne (1,5 → 360, comme le style par défaut).
   const interligne = Number(bloc.style?.lineHeight);
@@ -140,14 +142,23 @@ function paragraphe(bloc, { style = null, numero = null } = {}) {
 function corpsDu(conteneur) {
   const paragraphes = [];
   let listesNumerotees = 0;
+  // Un saut de page (<hr>) n'est pas un paragraphe : il fait commencer le
+  // paragraphe suivant sur une nouvelle page (plusieurs à la suite n'en font qu'un).
+  let nouvellePage = false;
   for (const bloc of conteneur.children) {
-    if (bloc.nodeName === 'UL' || bloc.nodeName === 'OL') {
+    if (bloc.nodeName === 'HR') {
+      nouvellePage = paragraphes.length > 0; // tout au début : rien à faire
+    } else if (bloc.nodeName === 'UL' || bloc.nodeName === 'OL') {
       // Liste à puces : numérotation n° 1. Chaque liste numérotée a la sienne
       // (n° 2, 3…), pour que la numérotation reparte de 1.
       const numero = bloc.nodeName === 'UL' ? 1 : 2 + listesNumerotees++;
-      for (const li of bloc.children) paragraphes.push(paragraphe(li, { style: 'ListParagraph', numero }));
+      for (const li of bloc.children) {
+        paragraphes.push(paragraphe(li, { style: 'ListParagraph', numero, nouvellePage }));
+        nouvellePage = false;
+      }
     } else {
-      paragraphes.push(paragraphe(bloc, { style: STYLES_TITRE[bloc.nodeName] ?? null }));
+      paragraphes.push(paragraphe(bloc, { style: STYLES_TITRE[bloc.nodeName] ?? null, nouvellePage }));
+      nouvellePage = false;
     }
   }
   return { paragraphes: paragraphes.join('\n'), listesNumerotees };

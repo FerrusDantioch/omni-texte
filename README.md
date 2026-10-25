@@ -32,17 +32,25 @@ Adresse : `https://ferrusdantioch.github.io/omni-texte/` (dépôt GitHub `Ferrus
   corrections, « Ajouter au dictionnaire » et « Ignorer ». Menu → « Dictionnaire
   personnel » : voir, ajouter et retirer ses propres mots.
 - Collage toujours en texte brut (chaque ligne devient un paragraphe).
+- Saut de page : bouton « Saut de page » de la barre d'outils (ou Ctrl+Entrée).
+  Il coupe le paragraphe au curseur ; à l'écran, une fine ligne « Saut de page »
+  en couleur discrète ; à l'impression, la suite commence sur une nouvelle page.
+  Retour arrière (au début du paragraphe qui suit) ou Suppr (à la fin de celui
+  qui précède) l'efface d'un coup ; « Annuler » le fait revenir.
+- Bouton « Imprimer / PDF » dans la barre d'outils : la fenêtre d'impression du
+  navigateur, d'où l'on peut aussi « Enregistrer au format PDF ».
 - Enregistrement automatique, plusieurs documents, compteur de mots et de caractères.
 - Ouvrir un fichier Word (.docx) ou texte (.txt) : il devient un nouveau document.
 - Corbeille : un document supprimé reste récupérable pendant 30 jours.
 - Sauvegarde de tous les documents dans un fichier, et restauration.
 - Bouton « Exporter » : trois formats, le fichier porte le titre du document.
-  - PDF : pour imprimer ou envoyer un document figé (feuille blanche, texte noir, couleurs conservées).
+  - PDF : pour imprimer ou envoyer un document figé (feuille blanche, texte noir, couleurs conservées,
+    A4, sauts de page respectés, jamais une ligne de paragraphe seule en haut ou en bas d'une page).
   - Word (.docx) : pour continuer le texte dans Word, Google Docs ou LibreOffice.
   - Texte brut (.txt) : le texte seul, sans mise en forme.
 - Trois thèmes : Omni-système (par défaut), Sombre, Clair.
 
-Raccourcis clavier : Ctrl+B (gras), Ctrl+I (italique), Ctrl+U (souligné),
+Raccourcis clavier : Ctrl+Entrée (saut de page), Ctrl+B (gras), Ctrl+I (italique), Ctrl+U (souligné),
 Ctrl+S (enregistrer), Ctrl+P (exporter directement en PDF), Ctrl+Z (annuler),
 Ctrl+Y (rétablir), Ctrl+F ou Ctrl+H (rechercher et remplacer ; Entrée : résultat
 suivant ; Maj+Entrée : précédent ; Échap : fermer), Maj+Entrée (aller à la ligne
@@ -126,7 +134,7 @@ Sans changement de version, les utilisateurs gardent l'ancienne version
   Le manifeste est un fichier de données (JSON) : il ne peut pas lire `config.js`,
   c'est pourquoi le nom y est recopié. Un test automatique vérifie que les deux
   correspondent. Le titre de la page et la fenêtre « À propos » suivent `config.js`.
-- **Version** : dans `js/config.js`, ligne `version: '1.1.5',` (version actuelle).
+- **Version** : dans `js/config.js`, ligne `version: '1.3.0',` (version actuelle).
 - **Ne change jamais** `idStockage: 'plume'` : c'est le nom de la base de données ;
   le changer rendrait les documents existants invisibles.
 - **Icônes** : elles sont créées par `outils/creer-icones.py` (Python et la
@@ -278,6 +286,26 @@ Sans changement de version, les utilisateurs gardent l'ancienne version
     « Ignorer » vaut jusqu'à la fermeture de l'application. Le dictionnaire
     personnel est gardé dans le navigateur, séparé de celui d'Omni-Romancier.
 
+23. **Saut de page** (version 1.3.0) : dans le document, c'est un élément `<hr>`
+    placé entre deux paragraphes. Il ne contient aucun texte (le libellé « Saut de
+    page » est dessiné par la feuille de style), donc le correcteur, la recherche
+    et le compteur de mots ne le voient jamais. Insérer un saut de page au milieu
+    d'un paragraphe le coupe en deux (une liste aussi) ; au tout début d'un
+    paragraphe, aucun paragraphe vide n'est laissé avant lui. À l'impression :
+    le repère est masqué, ce qui le suit commence sur une nouvelle page ;
+    plusieurs sauts à la suite n'en font qu'un ; un saut au tout début ou à la
+    fin ne crée pas de page blanche (les paragraphes vides de la fin ne sont pas
+    imprimés). Exports : Word, un vrai saut de page (« saut de page avant » sur
+    le paragraphe suivant) ; texte brut, la ligne `──── Saut de page ────`, lisible
+    partout, qui redevient un saut de page si l'on rouvre le fichier ou qu'on la
+    colle. En ouvrant un fichier Word ou texte, ses sauts de page sont repris.
+    Le repère texte est commun avec Omni-Romancier (dossier `commun/`).
+24. **Lignes isolées** à l'impression : au moins deux lignes d'un paragraphe en
+    bas de page et trois en haut (deux pour un paragraphe de quatre lignes).
+    Ces valeurs ont été mesurées dans Chrome : avec « trois et trois », Chrome
+    laisse au contraire une ligne seule quand un paragraphe de quatre lignes
+    tombe en fin de page.
+
 ---
 
 ## 7. Limites connues
@@ -300,6 +328,8 @@ Sans changement de version, les utilisateurs gardent l'ancienne version
   (« les maison » n'est pas signalé). Ses suggestions ne connaissent pas la
   fréquence des mots : la bonne correction n'est pas toujours la première.
 - Le dictionnaire personnel n'est pas inclus dans « Sauvegarder tous mes documents ».
+- Saut de page dans une liste numérotée : la seconde partie de la liste repart à 1.
+- Firefox n'applique pas les règles contre les lignes isolées à l'impression.
 
 ---
 
@@ -315,6 +345,7 @@ css/base.css           mise en page et composants communs à la suite
 css/redaction.css      barre d'outils, palettes, feuille, compteur
 css/print.css          impression et PDF
 correcteur/            correcteur d'orthographe, commun avec Omni-Romancier (voir son LISEZ-MOI.md)
+commun/                saut de page en texte simple, commun avec Omni-Romancier (voir son LISEZ-MOI.md)
 js/config.js           nom, version, contact (à modifier ici)
 js/app.js              assemblage de l'application
 js/theme.js            thèmes                                  (commun à la suite)
@@ -344,7 +375,7 @@ js/zip.js              fabrication et lecture d'archives ZIP (commun à la suite
 fonts/                 polices (.woff2) et leurs licences
 icons/                 icônes de l'application
 assets/                logo de l'Omni-système
-outils/                serveur local, création des icônes, copie du correcteur
+outils/                serveur local, création des icônes, copie du correcteur et du code commun
                        vers Omni-Romancier, fabrication du dictionnaire (outils/dictionnaire/)
 tests/                 tests automatiques
 ```
@@ -398,6 +429,12 @@ L'analyse du PDF demande aussi Python 3 avec `pdfplumber` et `pypdfium2`
 21. Android : pendant la frappe, le clavier ouvert, la barre d'outils reste visible et défile au doigt.
 22. Android : Menu → Installer l'application ; l'icône violette apparaît sur l'écran d'accueil.
 23. Taper « Les maizons sont bele. » : après une demi-seconde, « maizons » et « bele » sont soulignés d'une vague rouge.
+24. Placer le curseur au milieu d'un paragraphe, toucher « Saut de page » : une fine ligne « Saut de page »
+    apparaît, le paragraphe est coupé en deux. Le repère n'est jamais souligné par le correcteur.
+25. Retour arrière au début du paragraphe qui suit : le saut de page disparaît d'un coup ; Annuler le fait revenir.
+26. « Imprimer / PDF » → « Enregistrer au format PDF » : la suite commence bien sur une nouvelle page,
+    sans le repère, sans menus ni boutons.
+27. Fermer l'application puis la rouvrir (aussi en mode avion) : les sauts de page sont toujours là.
 24. Toucher « maizons » : une bulle propose « maisons » ; la toucher remplace le mot, le clavier reste ouvert.
 25. Taper « Kaelith », le toucher, « Ajouter au dictionnaire » : il n'est plus souligné. Fermer l'application, la rouvrir : il ne l'est toujours pas. Menu → Dictionnaire personnel : il y figure, « Retirer » le fait de nouveau souligner.
 26. Mode avion, recharger, taper « une biblioteque » : le mot est souligné et la bulle propose « bibliothèque ».
