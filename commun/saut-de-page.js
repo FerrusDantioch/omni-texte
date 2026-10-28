@@ -36,6 +36,21 @@ export function estSautDePage(ligne) {
   return MOTIF.test(ligne);
 }
 
+/**
+ * Le même texte, où chaque ligne de saut de page est remplacée par un
+ * caractère neutre (U+FFFF, qui n'est ni une lettre, ni une espace, et qu'on
+ * ne tape jamais) répété sur toute sa longueur. Les positions ne changent
+ * pas : on s'en sert pour chercher dans le texte (mots, noms, recherche) sans
+ * jamais tomber sur le repère.
+ */
+export function masquerSauts(texte) {
+  if (!texte || !texte.includes('─')) return texte;
+  return texte
+    .split('\n')
+    .map((ligne) => (estSautDePage(ligne) ? '\uFFFF'.repeat(ligne.length) : ligne))
+    .join('\n');
+}
+
 /** Bornes de la ligne qui contient la position : { debut, fin, texte }. */
 export function ligneA(texte, position) {
   const debut = position <= 0 ? 0 : texte.lastIndexOf('\n', position - 1) + 1;
