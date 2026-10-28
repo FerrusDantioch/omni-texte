@@ -3,6 +3,7 @@
 
 import { lireDocx } from './import-docx.js';
 import { ErreurArchive } from './zip.js';
+import { SAUT_DE_PAGE, estSautDePage } from '../commun/saut-de-page.js';
 
 const TAILLE_MAX = 50 * 1024 * 1024; // 50 Mo de fichier
 const TAILLE_MAX_DOCUMENT = 50 * 1024 * 1024; // 50 Mo de code HTML (comme dans storage.js)
@@ -39,12 +40,24 @@ export function decoderTexte(octets) {
   }
 }
 
-/** Texte brut → paragraphes (une ligne = un paragraphe). */
+/**
+ * Texte brut → paragraphes (une ligne = un paragraphe). Une ligne
+ * « ──── Saut de page ──── » (export .txt d'Omni-Texte, texte d'Omni-Romancier)
+ * et le caractère de saut de page des anciens fichiers texte (\f) deviennent
+ * de vrais sauts de page.
+ */
 export function texteEnHtml(texte) {
-  const propre = texte.replace(/\r\n?/g, '\n').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+  const propre = texte
+    .replace(/\r\n?/g, '\n')
+    .replace(/\n?\f\n?/g, `\n${SAUT_DE_PAGE}\n`)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
   const lignes = propre.replace(/\n$/, '').split('\n');
   const conteneur = document.createElement('div');
   for (const ligne of lignes) {
+    if (estSautDePage(ligne)) {
+      conteneur.append(document.createElement('hr'));
+      continue;
+    }
     const p = document.createElement('p');
     if (ligne) p.textContent = ligne;
     else p.append(document.createElement('br'));

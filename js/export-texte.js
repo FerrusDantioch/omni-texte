@@ -3,6 +3,13 @@
 // par leur numéro. Le fichier est en UTF-8 avec une marque d'encodage (BOM)
 // et des fins de ligne Windows (CRLF) : les accents s'affichent correctement
 // même dans les anciens éditeurs de texte de Windows.
+//
+// Un saut de page devient la ligne « ──── Saut de page ──── » : elle reste
+// lisible dans n'importe quel éditeur (un caractère de saut de page, lui,
+// s'affiche souvent comme un carré), et elle redevient un vrai saut de page
+// si l'on rouvre le fichier dans Omni-Texte (ou si on la colle).
+
+import { SAUT_DE_PAGE } from '../commun/saut-de-page.js';
 
 const FIN_DE_LIGNE = '\r\n';
 
@@ -24,7 +31,9 @@ function texteDuBloc(bloc) {
 export function creerTexte(conteneur) {
   const lignes = [];
   for (const bloc of conteneur.children) {
-    if (bloc.nodeName === 'UL' || bloc.nodeName === 'OL') {
+    if (bloc.nodeName === 'HR') {
+      lignes.push(SAUT_DE_PAGE);
+    } else if (bloc.nodeName === 'UL' || bloc.nodeName === 'OL') {
       let numero = 1;
       for (const li of bloc.children) {
         lignes.push(`${bloc.nodeName === 'OL' ? `${numero++}.` : '•'} ${texteDuBloc(li)}`);

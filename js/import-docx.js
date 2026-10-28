@@ -204,7 +204,11 @@ class LecteurDocx {
     const sortie = document.createElement('div');
     let liste = null;
     for (const bloc of blocs) {
-      if (bloc.liste) {
+      if (bloc.saut) {
+        // Saut de page : un <hr> entre deux blocs (voir paragraphes.js).
+        liste = null;
+        sortie.append(document.createElement('hr'));
+      } else if (bloc.liste) {
         const memeListe = liste && liste.nodeName === bloc.liste.type && liste.dataset.numero === bloc.liste.numero;
         if (!memeListe) {
           liste = document.createElement(bloc.liste.type);
@@ -224,7 +228,7 @@ class LecteurDocx {
   lireBlocs(conteneur, blocs) {
     for (const element of conteneur?.children ?? []) {
       if (element.namespaceURI !== this.W) continue;
-      if (element.localName === 'p') blocs.push(this.paragraphe(element));
+      if (element.localName === 'p') blocs.push(...this.paragraphe(element));
       else if (element.localName === 'tbl') {
         // Tableau : le texte de chaque case devient un ou plusieurs paragraphes.
         this.remarques.tableaux++;
@@ -236,6 +240,10 @@ class LecteurDocx {
     }
   }
 
+  /**
+   * Un paragraphe Word devient un bloc, ou plusieurs s'il contient des sauts
+   * de page : [{ element, liste }, { saut: true }, { element, liste }…].
+   */
   paragraphe(p) {
     const pPr = this.enfant(p, 'pPr');
     const niveau = this.niveauDeTitre(pPr);
@@ -256,8 +264,26 @@ class LecteurDocx {
     this.morceaux = [];
     this.champs = []; // champs Word (numéros de page…) : on garde le résultat, pas le code
     this.lireEnLigne(p);
-    this.ecrireMorceaux(element);
-    return { element, liste };
+
+    const blocs = [];
+    // « Saut de page avant » (réglage du paragraphe ou de son style).
+    if (interrupteur(this.propriete(pPr, 'pageBreakBefore'), this.W)) blocs.push({ saut: true });
+    // Les sauts de page placés dans le texte coupent le paragraphe en morceaux.
+    const groupes = [[]];
+    for (const m of this.morceaux) {
+      if (m.saut) groupes.push([]);
+      else groupes.at(-1).push(m);
+    }
+    groupes.forEach((groupe, i) => {
+      if (i > 0) blocs.push({ saut: true });
+      // Rien d'écrit avant ou après le saut de page : pas de paragraphe vide.
+      if (groupes.length > 1 && groupe.every((m) => m.texte.trim() === '')) return;
+      const bloc = i === 0 ? element : element.cloneNode(false);
+      this.morceaux = groupe;
+      this.ecrireMorceaux(bloc);
+      blocs.push({ element: bloc, liste });
+    });
+    return blocs;
   }
 
   /** Parcourt le contenu d'un paragraphe (morceaux de texte, liens, modifications suivies…). */
@@ -309,6 +335,7 @@ class LecteurDocx {
       if (this.champs.includes('code')) continue; // code d'un champ : ignoré
       if (nom === 't') this.ajouter(element.textContent, format);
       else if (nom === 'tab' || nom === 'ptab') this.ajouter('\t', format);
+      else if (nom === 'br' && element.getAttributeNS(this.W, 'type') === 'page') this.morceaux.push({ saut: true });
       else if (nom === 'br' || nom === 'cr') this.ajouter('\n', format);
       else if (nom === 'noBreakHyphen') this.ajouter('‑', format);
       else if (nom === 'drawing' || nom === 'pict' || nom === 'object') this.remarques.images++;

@@ -18,7 +18,10 @@ import {
   styler, effacerFormat, barrer, estBarre, aLeFormat, appliquerFormat, insererSupportInvisible, nettoyerEnLigne,
   nettoyerStylesAjoutes, taillePt,
 } from './mise-en-forme.js';
-import { appliquerStyleParagraphe, basculerListe, aligner, espacer, copierReglagesBloc, reparerStructure } from './paragraphes.js';
+import {
+  appliquerStyleParagraphe, basculerListe, aligner, espacer, copierReglagesBloc, reparerStructure, estSautDePage,
+} from './paragraphes.js';
+import { estSautDePage as estLigneSautDePage } from '../commun/saut-de-page.js';
 import { contenuPropre } from './sanitize.js';
 import { Historique } from './historique.js';
 import { corrigerTypographie } from './typographie.js';
@@ -137,6 +140,12 @@ export class Editeur {
 
   touche(e) {
     if (!(e.ctrlKey || e.metaKey) || e.altKey || e.isComposing) return;
+    // Ctrl+Entrée : saut de page (le même raccourci que Word et LibreOffice).
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      this.insererSautDePage();
+      return;
+    }
     const actions = { b: () => this.gras(), i: () => this.italique(), u: () => this.souligne() };
     const action = actions[e.key.toLowerCase()];
     if (action && !e.shiftKey) {
@@ -396,6 +405,70 @@ export class Editeur {
     });
   }
 
+  // --- Commande : saut de page ----------------------------------------------
+
+  /**
+   * Insère un saut de page au curseur. Le paragraphe est coupé en deux à cet
+   * endroit (une liste aussi), le saut de page se place entre les deux
+   * morceaux, et le curseur va au début de la nouvelle page. Une sélection
+   * est d'abord effacée, comme quand on tape du texte.
+   */
+  insererSautDePage() {
+    this.executer((plage) => {
+      const racine = this.racine;
+      if (!plage.collapsed) document.execCommand('delete');
+      const curseur = plageDans(racine);
+      if (!curseur) return;
+      const saut = document.createElement('hr');
+      const bloc = blocDe(curseur.startContainer, racine);
+      if (!bloc) {
+        // Curseur posé entre deux blocs (par exemple entre deux sauts de page).
+        curseur.insertNode(saut);
+        placerCurseurApres(saut, racine);
+        return;
+      }
+      // Ce qui suit le curseur part dans un nouveau bloc du même genre.
+      const fin = document.createRange();
+      fin.setStart(curseur.startContainer, curseur.startOffset);
+      fin.setEnd(bloc, bloc.childNodes.length);
+      const suite = document.createElement(bloc.nodeName.toLowerCase());
+      copierReglagesBloc(bloc, suite);
+      suite.appendChild(fin.extractContents());
+
+      const liste = bloc.nodeName === 'LI' ? bloc.parentNode : null;
+      const haut = liste ?? bloc; // l'élément placé directement dans la feuille
+      // Dans une liste, les éléments suivants forment une seconde liste,
+      // après le saut de page.
+      let apres = suite;
+      if (liste) {
+        apres = document.createElement(liste.nodeName.toLowerCase());
+        apres.appendChild(suite);
+        while (bloc.nextSibling) apres.appendChild(bloc.nextSibling);
+      }
+      haut.after(saut);
+      saut.after(apres);
+
+      // Pas de bloc vide inutile : un saut de page au tout début d'un
+      // paragraphe ne laisse pas de paragraphe vide avant lui, et à la fin, le
+      // curseur va au paragraphe suivant s'il existe déjà.
+      if (estBlocVide(bloc)) {
+        bloc.remove();
+        if (liste && !liste.firstElementChild) liste.remove();
+      }
+      if (estBlocVide(suite) && (suite.nextElementSibling || apres.nextElementSibling)) {
+        suite.remove();
+        if (liste && !apres.firstElementChild) apres.remove();
+      } else if (estBlocVide(suite) && suite.nodeName !== 'P') {
+        // Rien après le saut de page : on continue en texte normal (pas en
+        // titre, ni dans une liste), comme avec Entrée après un titre.
+        const p = document.createElement('p');
+        p.appendChild(document.createElement('br'));
+        apres.replaceWith(p);
+      }
+      placerCurseurApres(saut, racine);
+    });
+  }
+
   /**
    * Fusionne le paragraphe courant avec le précédent (« arriere ») ou le
    * suivant (« avant »), comme un traitement de texte classique : le texte
@@ -407,6 +480,7 @@ export class Editeur {
     const plage = plageDans(this.racine);
     if (!plage || !plage.collapsed) return false;
     const bloc = blocDe(plage.startContainer, this.racine);
+    if (this.effacerSautDePageVoisin(plage, bloc, sens)) return true;
     if (!bloc || bloc.nodeName === 'LI' || bloc.parentNode !== this.racine) return false;
     const voisin = sens === 'arriere' ? bloc.previousElementSibling : bloc.nextElementSibling;
     if (!voisin || !/^(P|H[123])$/.test(voisin.nodeName)) return false;
@@ -433,6 +507,28 @@ export class Editeur {
       nettoyerEnLigne(haut);
       ecrirePositions(racine, { debut: position, fin: position });
     });
+    return true;
+  }
+
+  /**
+   * Retour arrière au début du bloc qui suit un saut de page (ou Suppr à la
+   * fin du bloc qui le précède) : le saut de page est effacé d'un coup.
+   * « Annuler » le fait revenir. Renvoie false si aucun saut de page n'est
+   * concerné.
+   */
+  effacerSautDePageVoisin(plage, bloc, sens) {
+    if (!bloc) return false;
+    let haut = bloc;
+    if (bloc.nodeName === 'LI') {
+      // Seulement depuis le premier élément d'une liste (ou le dernier, pour Suppr).
+      if (sens === 'arriere' ? bloc.previousElementSibling : bloc.nextElementSibling) return false;
+      haut = bloc.parentNode;
+    }
+    if (haut.parentNode !== this.racine) return false;
+    const voisin = sens === 'arriere' ? haut.previousElementSibling : haut.nextElementSibling;
+    if (!estSautDePage(voisin)) return false;
+    if (sens === 'arriere' ? !estAuDebut(plage, bloc) : !estALaFin(plage, bloc)) return false;
+    this.executer(() => voisin.remove());
     return true;
   }
 
@@ -531,6 +627,9 @@ export class Editeur {
         if (!plage.collapsed) document.execCommand('delete');
         if (lignes[0]) document.execCommand('insertText', false, lignes[0]);
         if (lignes.length > 1) insererLignes(this.racine, lignes.slice(1));
+        // Un repère « ──── Saut de page ──── » collé (venant d'Omni-Romancier
+        // ou d'un fichier .txt exporté) redevient un vrai saut de page.
+        if (lignes.some(estLigneSautDePage)) convertirReperesColles(this.racine);
       });
     } finally {
       this.collageEnCours = false;
@@ -739,6 +838,29 @@ function dernierTexte(element) {
   let dernier = null;
   for (let n = marcheur.nextNode(); n; n = marcheur.nextNode()) dernier = n;
   return dernier;
+}
+
+/** Les paragraphes qui ne contiennent que le repère texte deviennent des sauts de page. */
+function convertirReperesColles(racine) {
+  for (const p of [...racine.children]) {
+    if (p.nodeName === 'P' && estLigneSautDePage(p.textContent.replaceAll(INVISIBLE, ''))) {
+      const saut = document.createElement('hr');
+      p.replaceWith(saut);
+      if (!saut.nextElementSibling) placerCurseurApres(saut, racine);
+    }
+  }
+}
+
+/** Place le curseur au début du bloc qui suit un saut de page (créé s'il manque). */
+function placerCurseurApres(saut, racine) {
+  let suivant = saut.nextElementSibling;
+  if (!suivant || estSautDePage(suivant)) {
+    suivant = document.createElement('p');
+    suivant.appendChild(document.createElement('br'));
+    saut.after(suivant);
+  }
+  const bloc = suivant.nodeName === 'UL' || suivant.nodeName === 'OL' ? suivant.firstElementChild : suivant;
+  placerCurseur(premierTexte(bloc) ?? bloc, 0);
 }
 
 function placerCurseur(noeud, decalage) {

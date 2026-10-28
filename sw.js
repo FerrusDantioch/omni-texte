@@ -37,6 +37,7 @@ const FICHIERS = [
   'correcteur/liste.js',
   'correcteur/mots-fr-7.5.txt',
   'correcteur/LICENCE-dictionnaire.txt',
+  'commun/saut-de-page.js',
   'js/config.js',
   'js/app.js',
   'js/barre-outils.js',

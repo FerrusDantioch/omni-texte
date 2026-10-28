@@ -182,6 +182,39 @@ test('au doigt : mise en forme d’une sélection et palette de couleurs', async
   expect(await page.evaluate(() => document.activeElement.id)).toBe('feuille');
 });
 
+test('au doigt : insérer un saut de page, puis l’effacer avec le retour arrière', async ({ page }, infos) => {
+  await remplir(page, '<p>Première page</p>');
+  await selectionner(page, 'page');
+  await page.evaluate(() => getSelection().collapseToEnd());
+  const bouton = page.getByRole('button', { name: 'Saut de page' });
+  await bouton.scrollIntoViewIfNeeded();
+  await bouton.tap();
+  expect(await contenu(page)).toBe('<p>Première page</p><hr><p><br></p>');
+  // La feuille garde le focus : on continue d'écrire sur la nouvelle page.
+  expect(await page.evaluate(() => document.activeElement.id)).toBe('feuille');
+  await page.keyboard.type('Deuxième page');
+  expect(await contenu(page)).toBe('<p>Première page</p><hr><p>Deuxième page</p>');
+  // Le repère tient dans l'écran (pas de défilement horizontal).
+  const saut = await page.locator('#feuille > hr').boundingBox();
+  expect(saut.x + saut.width).toBeLessThanOrEqual(390);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: infos.outputPath('saut-de-page.png') });
+  // Retour arrière au début de la deuxième page : le saut de page disparaît.
+  await page.evaluate(() => {
+    const p = document.querySelectorAll('#feuille p')[1];
+    const plage = document.createRange();
+    plage.setStart(p.firstChild, 0);
+    getSelection().removeAllRanges();
+    getSelection().addRange(plage);
+  });
+  await page.keyboard.press('Backspace');
+  expect(await contenu(page)).toBe('<p>Première page</p><p>Deuxième page</p>');
+  // Le bouton « Imprimer / PDF » est là aussi, à portée de doigt.
+  const imprimer = page.getByRole('button', { name: 'Imprimer / PDF' });
+  await imprimer.scrollIntoViewIfNeeded();
+  await expect(imprimer).toBeInViewport();
+});
+
 test('captures d’écran sur téléphone (contrôle visuel)', async ({ page }, infos) => {
   await page.fill('#titre-document', 'Notes de lecture');
   await page.evaluate(() => {

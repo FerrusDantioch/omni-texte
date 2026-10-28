@@ -89,6 +89,12 @@ function copier(depuis, vers, profondeur) {
       continue;
     }
     const nom = RENOMMAGES[original] ?? original;
+    if (nom === 'HR') {
+      // Saut de page : gardé seulement au premier niveau du document (le
+      // conteneur final n'a pas de parent), toujours vide et sans attribut.
+      if (!vers.parentNode) vers.appendChild(document.createElement('hr'));
+      continue;
+    }
     if (!BALISES_PERMISES.has(nom)) {
       // Balise inconnue : on garde seulement son contenu.
       copier(noeud, vers, profondeur + 1);
