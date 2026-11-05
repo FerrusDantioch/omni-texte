@@ -14,7 +14,7 @@ test('fenêtre « À propos » : contenu exact, Échap et bouton « Fermer », r
   await expect(fenetre.locator('img')).toHaveAttribute('src', 'assets/logo-omni-systeme.webp');
   await expect(fenetre.locator('.nom-application')).toHaveText('Omni-Texte');
   await expect(fenetre.locator('.version')).toHaveText(`Version ${VERSION}`);
-  await expect(fenetre).toContainText('Application réalisée par Ferrus Dantioch, avec l\'aide de Claude (Anthropic).');
+  await expect(fenetre).toContainText('Application réalisée par Ferrus Dantioch, avec l\'aide de l\'intelligence artificielle.');
   await expect(fenetre).toContainText('Tes documents restent sur cet appareil. Aucun compte, aucune donnée envoyée.');
   const contact = fenetre.locator('a.contact');
   await expect(contact).toHaveAttribute('href', 'mailto:omni-systeme.choking513@passmail.net');
