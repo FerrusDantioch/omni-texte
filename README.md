@@ -473,5 +473,5 @@ dans `outils/dictionnaire/source/`.
 
 ---
 
-Application réalisée par Ferrus Dantioch, avec l'aide de Claude (Anthropic).
+Application réalisée par Ferrus Dantioch, avec l'aide de l'intelligence artificielle.
 Contact : omni-systeme.choking513@passmail.net
