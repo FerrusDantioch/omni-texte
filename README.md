@@ -43,11 +43,13 @@ Adresse : `https://ferrusdantioch.github.io/omni-texte/` (dépôt GitHub `Ferrus
 - Ouvrir un fichier Word (.docx) ou texte (.txt) : il devient un nouveau document.
 - Corbeille : un document supprimé reste récupérable pendant 30 jours.
 - Sauvegarde de tous les documents dans un fichier, et restauration.
-- Bouton « Exporter » : trois formats, le fichier porte le titre du document.
+- Bouton « Exporter » : cinq formats, le fichier porte le titre du document.
   - PDF : pour imprimer ou envoyer un document figé (feuille blanche, texte noir, couleurs conservées,
     A4, sauts de page respectés, jamais une ligne de paragraphe seule en haut ou en bas d'une page).
   - Word (.docx) : pour continuer le texte dans Word, Google Docs ou LibreOffice.
   - Texte brut (.txt) : le texte seul, sans mise en forme.
+  - Page web (.html) : garde la mise en forme dans un fichier HTML5 autonome, ouvrable partout sans internet.
+  - Code HTML brut (.html) : enregistre le code HTML, CSS ou JS écrit dans l'éditeur tel quel (sans échappement ni BOM, fins de ligne LF) pour l'ouvrir dans un navigateur.
 - Trois thèmes : Omni-système (par défaut), Sombre, Clair.
 
 Raccourcis clavier : Ctrl+Entrée (saut de page), Ctrl+B (gras), Ctrl+I (italique), Ctrl+U (souligné),
@@ -134,7 +136,7 @@ Sans changement de version, les utilisateurs gardent l'ancienne version
   Le manifeste est un fichier de données (JSON) : il ne peut pas lire `config.js`,
   c'est pourquoi le nom y est recopié. Un test automatique vérifie que les deux
   correspondent. Le titre de la page et la fenêtre « À propos » suivent `config.js`.
-- **Version** : dans `js/config.js`, ligne `version: '1.3.0',` (version actuelle).
+- **Version** : dans `js/config.js`, ligne `version: '1.4.0',` (version actuelle).
 - **Ne change jamais** `idStockage: 'plume'` : c'est le nom de la base de données ;
   le changer rendrait les documents existants invisibles.
 - **Icônes** : elles sont créées par `outils/creer-icones.py` (Python et la
@@ -219,8 +221,8 @@ Sans changement de version, les utilisateurs gardent l'ancienne version
    service worker ne supprime que les caches commençant par `plume-`.
    Conseil pour les prochaines applications : suivre la même règle.
 9. **Sécurité** : une politique de sécurité (`Content-Security-Policy`) interdit
-   tout code extérieur. Le petit script du thème, dans `index.html`, est autorisé
-   par son empreinte ; un test signale si elle n'est plus à jour.
+   tout code extérieur et tout script inline (`script-src 'self'`). Le petit
+   script du thème est externalisé dans `js/theme-init.js`.
 10. **Installation** : le bandeau d'installation automatique du navigateur est masqué ;
     l'installation se fait depuis « Menu → Installer l'application ».
 11. **Contrastes** : toutes les valeurs de couleurs fournies respectent déjà le
@@ -239,6 +241,11 @@ Sans changement de version, les utilisateurs gardent l'ancienne version
     (dans Word, il apparaît comme une « trame de fond »).
 14. **Export texte brut (.txt)** : encodage UTF-8 avec marque d'encodage et fins
     de ligne Windows, pour que les accents s'affichent partout.
+14 bis. **Export HTML (.html)** : deux modes produisant chacun un fichier `.html`
+    en UTF-8 sans BOM et fins de ligne LF : « Page web (.html) » génère une
+    page HTML5 complète autonome (CSS intégré, sans police ni ressource externe
+    ni script) ; « Code HTML brut (.html) » extrait le texte littéral des blocs
+    sans échappement pour exécuter directement du HTML/CSS/JS saisi dans l'éditeur.
 15. **Pas d'export Markdown** pour l'instant : ce format pourrait induire certains
     utilisateurs en erreur.
 16. **Corbeille** : mettre un document à la corbeille ne demande pas de confirmation
@@ -349,6 +356,7 @@ commun/                saut de page en texte simple, commun avec Omni-Romancier 
 js/config.js           nom, version, contact (à modifier ici)
 js/app.js              assemblage de l'application
 js/theme.js            thèmes                                  (commun à la suite)
+js/theme-init.js       application du thème avant premier rendu (anti-FOUC)
 js/storage.js          stockage, sauvegarde, restauration      (commun à la suite)
 js/ui.js               fenêtres, messages, « À propos »        (commun à la suite)
 js/pwa.js              installation et mises à jour            (commun à la suite)
@@ -370,6 +378,7 @@ js/import-docx.js      lecture d'un fichier Word (.docx)
 js/impression.js       export PDF
 js/exporter.js         fenêtre « Exporter » (choix du format)
 js/export-docx.js      export Word (.docx)
+js/export-html.js      export HTML (.html) : page web autonome et code HTML brut
 js/export-texte.js     export texte brut (.txt)
 js/zip.js              fabrication et lecture d'archives ZIP (commun à la suite)
 fonts/                 polices (.woff2) et leurs licences
@@ -419,6 +428,7 @@ L'analyse du PDF demande aussi Python 3 avec `pdfplumber` et `pypdfium2`
 11. Exporter → PDF : le fichier proposé porte le titre du document ; le PDF est blanc, texte noir, couleurs conservées.
 12. Exporter → Word (.docx), puis ouvrir le fichier dans Word ou Google Docs : titres, gras, couleurs, surlignage et listes sont conservés.
 13. Exporter → Texte brut (.txt), puis ouvrir le fichier : les accents s'affichent correctement.
+13 bis. Exporter → Page web (.html) et Code HTML brut (.html) : la page web garde sa mise en forme sans connexion internet, et le code HTML brut s'ouvre dans le navigateur tel qu'écrit.
 14. Couper le réseau (mode avion), recharger : l'application s'ouvre et enregistre.
 15. Taper « Bonjour! Il a dit "oui" et l'a fait ». Le texte devient « Bonjour ! Il a dit « oui » et l’a fait » (petites espaces avant ! et dans les guillemets).
 16. Ctrl+F (ou la loupe), taper « oui » : le compteur indique « 1 sur 1 » et le mot est coloré. Taper « non » dans « Remplacer par… », cliquer « Tout remplacer », puis « Annuler » : « oui » revient.
