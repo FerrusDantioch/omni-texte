@@ -4,6 +4,7 @@
   "description": "Traitement de texte hors ligne. Tes documents restent sur ton appareil : aucun compte, aucune donnée envoyée.",
   "lang": "fr",
   "dir": "ltr",
+  "id": "/omni-texte/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -49,18 +49,26 @@ export async function installer() {
 export function demarrerServiceWorker({ surMiseAJour, avantRechargement }) {
   if (!('serviceWorker' in navigator) || !window.isSecureContext) return;
   let rechargementDemande = false;
+  let masquerAnnonce = null;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (rechargementDemande) window.location.reload();
+    if (rechargementDemande) {
+      window.location.reload();
+    } else {
+      masquerAnnonce?.();
+      masquerAnnonce = null;
+    }
   });
   navigator.serviceWorker
     .register('sw.js', { updateViaCache: 'none' })
     .then((enregistrement) => {
-      const proposer = (travailleur) =>
-        surMiseAJour(async () => {
+      const proposer = (travailleur) => {
+        masquerAnnonce?.();
+        masquerAnnonce = surMiseAJour(async () => {
           rechargementDemande = true;
           await avantRechargement();
           travailleur.postMessage({ type: 'activer' });
         });
+      };
       if (enregistrement.waiting && navigator.serviceWorker.controller) proposer(enregistrement.waiting);
       enregistrement.addEventListener('updatefound', () => {
         const nouveau = enregistrement.installing;

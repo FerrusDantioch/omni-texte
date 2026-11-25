@@ -134,7 +134,7 @@ async function demarrer() {
     ouvrirFichier: () => ouvrirUnFichier($('fichier-import'), documents, $('bouton-ouvrir-fichier')),
   });
 
-  // --- Export : PDF (impression), Word, texte brut ---
+  // --- Export : PDF (impression), Word, texte brut, HTML ---
   const titreDuDocument = () => titreAffiche({ titre: champTitre.value });
   const exportPdf = new ExportPdf({
     preferences,
@@ -239,8 +239,14 @@ async function demarrer() {
 
   // --- Hors ligne et mises à jour ---
   demarrerServiceWorker({
-    surMiseAJour: (appliquer) =>
-      afficherMessage('Une nouvelle version est disponible.', { action: 'Recharger', surAction: appliquer, duree: 0 }),
+    surMiseAJour: (appliquer) => {
+      const message = afficherMessage('Une nouvelle version est disponible.', {
+        action: 'Recharger',
+        surAction: appliquer,
+        duree: 0,
+      });
+      return () => message.remove();
+    },
     avantRechargement: () => documents.enregistrer(),
   });
 }
