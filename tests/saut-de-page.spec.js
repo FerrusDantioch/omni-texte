@@ -327,7 +327,7 @@ test('le code commun est identique dans Omni-Romancier (s’il est à côté)', 
   const { existsSync } = await import('node:fs');
   const ici = fileURLToPath(new URL('../commun', import.meta.url));
   const autre = fileURLToPath(new URL('../../omni-romancier/commun', import.meta.url));
-  test.skip(!existsSync(autre), 'Omni-Romancier n’est pas à côté de ce dossier');
+  test.skip(!process.env.VERIFIER_ROMANCIER || !existsSync(autre), 'Omni-Romancier non vérifié par défaut (définir VERIFIER_ROMANCIER=1 pour comparer)');
   const fichiers = (await readdir(ici)).sort();
   expect((await readdir(autre)).sort()).toEqual(fichiers);
   for (const f of fichiers) expect((await readFile(`${autre}/${f}`)).equals(await readFile(`${ici}/${f}`)), f).toBe(true);

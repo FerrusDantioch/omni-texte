@@ -1,4 +1,4 @@
-// Fenêtre « Exporter le document » : PDF, Word (.docx) ou texte brut (.txt).
+// Fenêtre « Exporter le document » : PDF, Word (.docx), texte brut (.txt) ou HTML (.html).
 // Le fichier produit porte le titre du document.
 
 import { ouvrirFenetre, afficherMessage } from './ui.js';
@@ -7,6 +7,7 @@ import { nomDeFichier } from './impression.js';
 import { contenuPropre } from './sanitize.js';
 import { creerDocx } from './export-docx.js';
 import { creerTexte } from './export-texte.js';
+import { creerHtml, creerHtmlBrut } from './export-html.js';
 
 export class Exporteur {
   /**
@@ -38,9 +39,14 @@ export class Exporteur {
     await this.avant();
     const contenu = contenuPropre(this.editeur.html());
     const titre = this.titre();
-    const nom = `${nomDeFichier(titre)}.${format}`;
+    const extension = format === 'html' || format === 'html-brut' ? 'html' : format;
+    const nom = `${nomDeFichier(titre)}.${extension}`;
     if (format === 'docx') {
       telecharger(nom, creerDocx(contenu, { titre, application: this.application }), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    } else if (format === 'html') {
+      telecharger(nom, creerHtml(contenu, { titre }), 'text/html;charset=utf-8');
+    } else if (format === 'html-brut') {
+      telecharger(nom, creerHtmlBrut(contenu), 'text/html;charset=utf-8');
     } else {
       telecharger(nom, creerTexte(contenu), 'text/plain;charset=utf-8');
     }

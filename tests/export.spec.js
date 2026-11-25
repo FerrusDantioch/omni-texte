@@ -37,7 +37,7 @@ function outilsDisponibles() {
   }
 }
 
-test('la fenêtre « Exporter » propose trois formats et se ferme avec Échap', async ({ page }) => {
+test('la fenêtre « Exporter » propose cinq formats et se ferme avec Échap', async ({ page }) => {
   await ouvrir(page);
   await page.click('#bouton-exporter');
   const fenetre = page.locator('#fenetre-export');
@@ -46,6 +46,12 @@ test('la fenêtre « Exporter » propose trois formats et se ferme avec Échap',
   await expect(fenetre.getByRole('button', { name: 'Word (.docx)' })).toHaveAccessibleDescription('Pour continuer le texte dans Word ou Google Docs.');
   await expect(fenetre.getByRole('button', { name: 'Texte brut (.txt)' })).toHaveAccessibleDescription(
     'Le texte seul, sans mise en forme, lisible partout.',
+  );
+  await expect(fenetre.getByRole('button', { name: 'Page web (.html)' })).toHaveAccessibleDescription(
+    'Garde ta mise en forme dans un fichier autonome, ouvrable partout sans internet.',
+  );
+  await expect(fenetre.getByRole('button', { name: 'Code HTML brut (.html)' })).toHaveAccessibleDescription(
+    'Enregistre le code HTML, CSS ou JS que tu as écrit tel quel, pour l’ouvrir dans un navigateur.',
   );
   await page.keyboard.press('Escape');
   await expect(fenetre).toBeHidden();
@@ -135,6 +141,79 @@ test('export texte brut : UTF-8, une ligne par paragraphe, puces et numéros', a
       'Gras puis normal',
       '',
     ].join('\r\n'),
+  );
+});
+
+test('export page web (.html) : document HTML5 autonome, stylé et sans ressource externe', async ({ page }) => {
+  await ouvrir(page);
+  await page.fill('#titre-document', 'Mon rapport <script> & "test"');
+  await page.evaluate((html) => {
+    const feuille = document.getElementById('feuille');
+    feuille.innerHTML = `${html}<hr><p>Page suivante</p>`;
+    feuille.dispatchEvent(new InputEvent('input', { inputType: 'insertText', bubbles: true }));
+  }, DOCUMENT_ESSAI);
+
+  const { nom, chemin } = await exporter(page, 'html');
+  expect(nom).toBe('Mon rapport script & test.html');
+  await expect(page.locator('.message', { hasText: 'Fichier « Mon rapport script & test.html » créé.' })).toBeVisible();
+
+  const octets = await readFile(chemin);
+  expect([...octets.subarray(0, 3)]).not.toEqual([0xef, 0xbb, 0xbf]);
+  const html = octets.toString('utf8');
+  expect(html).not.toContain('\uFEFF');
+  expect(html).not.toContain('\u200B');
+  expect(html).not.toContain('\r\n');
+  expect(html.startsWith('<!DOCTYPE html>\n<html lang="fr">\n')).toBe(true);
+  expect(html).toContain('<meta charset="UTF-8">');
+  expect(html).toContain('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
+  expect(html).toContain('<title>Mon rapport &lt;script&gt; &amp; &quot;test&quot;</title>');
+  expect(html).toContain('<style>');
+  expect(html).not.toMatch(/<script\b/i);
+  expect(html).not.toMatch(/https?:\/\//i);
+  expect(html).toContain('<h1>Titre principal</h1>');
+  expect(html).toContain('<b>gras</b>');
+  expect(html).toContain('<i>italique</i>');
+  expect(html).toContain('<u>souligné</u>');
+  expect(html).toContain('<s>barré</s>');
+  expect(html).toContain('<ul><li>premier</li><li>second</li></ul>');
+  expect(html).toContain('<ol><li>un</li><li>deux</li></ol>');
+  expect(html).toContain('<hr><p>Page suivante</p>');
+});
+
+test('export code HTML brut (.html) : code non échappé, sans BOM ni caractère invisible, fins de ligne LF', async ({ page }) => {
+  await ouvrir(page);
+  await page.fill('#titre-document', 'ma-page');
+  await page.evaluate(() => {
+    const feuille = document.getElementById('feuille');
+    feuille.replaceChildren(
+      ...['<!DOCTYPE html>', '<html lang="fr">', '<style>body { color: #9d7cf4; }\u200B</style>', '<script>const ok = "a & b" < 2;</script>', '</html>'].map((ligne) => {
+        const p = document.createElement('p');
+        p.textContent = ligne;
+        return p;
+      }),
+    );
+    feuille.dispatchEvent(new InputEvent('input', { inputType: 'insertText', bubbles: true }));
+  });
+
+  const { nom, chemin } = await exporter(page, 'html-brut');
+  expect(nom).toBe('ma-page.html');
+  await expect(page.locator('.message', { hasText: 'Fichier « ma-page.html » créé.' })).toBeVisible();
+
+  const octets = await readFile(chemin);
+  expect([...octets.subarray(0, 3)]).not.toEqual([0xef, 0xbb, 0xbf]);
+  const texte = octets.toString('utf8');
+  expect(texte).not.toContain('\uFEFF');
+  expect(texte).not.toContain('\u200B');
+  expect(texte).not.toContain('\r\n');
+  expect(texte).toBe(
+    [
+      '<!DOCTYPE html>',
+      '<html lang="fr">',
+      '<style>body { color: #9d7cf4; }</style>',
+      '<script>const ok = "a & b" < 2;</script>',
+      '</html>',
+      '',
+    ].join('\n'),
   );
 });
 

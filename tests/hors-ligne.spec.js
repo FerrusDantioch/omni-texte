@@ -90,7 +90,7 @@ test('la liste des fichiers mis en cache correspond exactement aux fichiers de l
   const sw = await readFile(`${RACINE}/sw.js`, 'utf8');
   const liste = [...sw.match(/const FICHIERS = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
   const surLeDisque = ['index.html', 'manifest.webmanifest'];
-  for (const [dossier, extension] of [['css', '.css'], ['js', '.js'], ['fonts', '.woff2'], ['icons', '.png'], ['assets', ''], ['correcteur', ''], ['commun', '']]) {
+  for (const [dossier, extension] of [['css', '.css'], ['js', '.js'], ['fonts', ''], ['icons', '.png'], ['assets', ''], ['correcteur', ''], ['commun', '']]) {
     for (const nom of await readdir(`${RACINE}/${dossier}`)) {
       // (les modes d'emploi du correcteur et du code commun ne sont pas utiles hors ligne)
       if (nom.endsWith(extension) && nom !== 'LISEZ-MOI.md') surLeDisque.push(`${dossier}/${nom}`);
@@ -107,6 +107,7 @@ test('le nom de l’application est le même dans config.js et dans le manifeste
   expect(manifeste.short_name).toBe(nom);
   expect(manifeste.start_url).toBe('./');
   expect(manifeste.scope).toBe('./');
+  expect(manifeste.id).toBe('/omni-texte/');
   expect(manifeste.lang).toBe('fr');
   expect(manifeste.icons.map((i) => i.purpose)).toContain('maskable');
 });
@@ -124,10 +125,98 @@ test('aucun chemin absolu ni ressource externe dans les fichiers de l’applicat
   }
 });
 
-test('la politique de sécurité autorise exactement le script de thème', async () => {
-  const { createHash } = await import('node:crypto');
+test('la politique de sécurité interdit les scripts inline et charge js/theme-init.js', async () => {
   const html = await readFile(`${RACINE}/index.html`, 'utf8');
-  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
-  const empreinte = createHash('sha256').update(script, 'utf8').digest('base64');
-  expect(html).toContain(`'sha256-${empreinte}'`);
+  expect(html).toContain('<script src="js/theme-init.js"></script>');
+  expect(html).toMatch(/content="[^"]*script-src 'self';/);
+  expect(html).not.toContain("'sha256-");
+  for (const [, corps] of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)) {
+    expect(corps.trim()).toBe('');
+  }
+});
+
+test('hors ligne : les fichiers de licence restent accessibles et les ressources absentes renvoient 503', async ({ context }) => {
+  const dossier = await mkdtemp(join(tmpdir(), 'omni-texte-503-'));
+  await cp(RACINE, dossier, {
+    recursive: true,
+    filter: (source) => {
+      const chemin = relative(RACINE, source);
+      return !chemin.startsWith('tests') && !chemin.startsWith('.git') && !chemin.split(sep).includes('node_modules');
+    },
+  });
+  const port = 8150 + test.info().parallelIndex;
+  const serveur = spawn(process.execPath, [join(dossier, 'outils', 'serveur.mjs')], { env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+  try {
+    const adresse = `http://localhost:${port}/omni-texte/`;
+    await expect.poll(() => fetch(adresse).then((r) => r.ok).catch(() => false)).toBe(true);
+    const pageApp = await context.newPage();
+    await pageApp.goto(adresse);
+    await pageApp.locator('#feuille[contenteditable="true"]').waitFor();
+    await pageApp.evaluate(() => navigator.serviceWorker.ready);
+    await expect.poll(() => pageApp.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+
+    // Coupe le serveur : toute requête réseau réelle du Service Worker échoue hors ligne.
+    serveur.kill();
+    await expect.poll(() => fetch(adresse).then(() => false).catch(() => true)).toBe(true);
+
+    const pageLicence = await context.newPage();
+    const repPolice = await pageLicence.goto(new URL('fonts/LICENCE-Oxanium.txt', adresse).href);
+    expect(repPolice.status()).toBe(200);
+    await expect(pageLicence.locator('body')).toContainText('SIL Open Font License');
+
+    const repDico = await pageLicence.goto(new URL('correcteur/LICENCE-dictionnaire.txt', adresse).href);
+    expect(repDico.status()).toBe(200);
+    await expect(pageLicence.locator('body')).toContainText('Mozilla Public License');
+
+    const statutAbsent = await pageLicence.evaluate(() => fetch('inexistant-hors-ligne.txt').then((r) => r.status));
+    expect(statutAbsent).toBe(503);
+    await pageLicence.close();
+    await pageApp.close();
+  } finally {
+    serveur.kill();
+    await rm(dossier, { recursive: true, force: true });
+  }
+});
+
+test('mise à jour multi-onglets : le bandeau « Recharger » disparaît dans les autres onglets', async ({ context }) => {
+  const dossier = await mkdtemp(join(tmpdir(), 'omni-texte-multi-'));
+  await cp(RACINE, dossier, {
+    recursive: true,
+    filter: (source) => {
+      const chemin = relative(RACINE, source);
+      return !chemin.startsWith('tests') && !chemin.startsWith('.git') && !chemin.split(sep).includes('node_modules');
+    },
+  });
+  const port = 8140 + test.info().parallelIndex;
+  const serveur = spawn(process.execPath, [join(dossier, 'outils', 'serveur.mjs')], { env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+  try {
+    const adresse = `http://localhost:${port}/omni-texte/`;
+    await expect.poll(() => fetch(adresse).then((r) => r.ok).catch(() => false)).toBe(true);
+    const onglet1 = await context.newPage();
+    const onglet2 = await context.newPage();
+    await onglet1.goto(adresse);
+    await onglet1.locator('#feuille[contenteditable="true"]').waitFor();
+    await expect.poll(() => onglet1.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+    await onglet2.goto(adresse);
+    await onglet2.locator('#feuille[contenteditable="true"]').waitFor();
+    await expect.poll(() => onglet2.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+
+    const config = join(dossier, 'js', 'config.js');
+    await writeFile(config, (await readFile(config, 'utf8')).replace(`version: '${VERSION}'`, `version: '${NOUVELLE}'`));
+    await onglet1.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
+
+    const annonce1 = onglet1.locator('.message', { hasText: 'Une nouvelle version est disponible.' });
+    const annonce2 = onglet2.locator('.message', { hasText: 'Une nouvelle version est disponible.' });
+    await expect(annonce1).toBeVisible({ timeout: 10_000 });
+    await expect(annonce2).toBeVisible({ timeout: 10_000 });
+
+    await Promise.all([onglet1.waitForEvent('load'), annonce1.getByRole('button', { name: 'Recharger' }).click()]);
+    await onglet1.locator('#feuille[contenteditable="true"]').waitFor();
+    await expect(annonce2).toHaveCount(0, { timeout: 10_000 });
+    await onglet1.close();
+    await onglet2.close();
+  } finally {
+    serveur.kill();
+    await rm(dossier, { recursive: true, force: true });
+  }
 });

@@ -44,6 +44,7 @@ const FICHIERS = [
   'js/documents.js',
   'js/editor.js',
   'js/export-docx.js',
+  'js/export-html.js',
   'js/export-texte.js',
   'js/exporter.js',
   'js/historique.js',
@@ -60,6 +61,7 @@ const FICHIERS = [
   'js/selection.js',
   'js/storage.js',
   'js/theme.js',
+  'js/theme-init.js',
   'js/tiroir-documents.js',
   'js/typographie.js',
   'js/ui.js',
@@ -71,6 +73,9 @@ const FICHIERS = [
   'icons/icone-512.png',
   'icons/icone-maskable-192.png',
   'icons/icone-maskable-512.png',
+  'fonts/LICENCE-JetBrains-Mono.txt',
+  'fonts/LICENCE-Literata.txt',
+  'fonts/LICENCE-Oxanium.txt',
   'fonts/oxanium-latin-500-normal.woff2',
   'fonts/oxanium-latin-700-normal.woff2',
   'fonts/oxanium-latin-800-normal.woff2',
@@ -150,14 +155,21 @@ self.addEventListener('fetch', (evenement) => {
   evenement.respondWith(
     (async () => {
       const cache = await caches.open(CACHE);
-      if (requete.mode === 'navigate') {
-        // Toute page de l'application affiche index.html.
-        const page = (await cache.match('./')) ?? (await cache.match('index.html'));
-        if (page) return page;
-        return fetch(requete);
-      }
       const enCache = await cache.match(requete, { ignoreSearch: true });
-      return enCache ?? fetch(requete);
+      if (enCache) return enCache;
+      try {
+        return await fetch(requete);
+      } catch {
+        if (requete.mode === 'navigate') {
+          const page = (await cache.match('./')) ?? (await cache.match('index.html'));
+          if (page) return page;
+        }
+        return new Response('Hors ligne', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        });
+      }
     })(),
   );
 });

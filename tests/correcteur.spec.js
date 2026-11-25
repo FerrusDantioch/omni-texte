@@ -1,8 +1,11 @@
 // Correcteur orthographique : soulignement, suggestions, dictionnaire
 // personnel, hors ligne, réglage, et le moteur lui-même (sans navigateur).
 
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, writeFile, mkdtemp, cp, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, expect, ouvrir, contenu, remplir, curseurApres } from './aides.js';
 
@@ -84,6 +87,34 @@ test.describe('le moteur', () => {
     moteur.memoire.clear();
     expect(moteur.verifier(long)).toEqual([]);
     expect(Date.now() - debut).toBeLessThan(1000);
+  });
+
+  test('un dictionnaire avec fins de ligne Windows (CRLF) est lu sans caractère parasite', async () => {
+    const source = await readFile(`${RACINE}/correcteur/moteur.js`, 'utf8');
+    const { Moteur } = await import(`data:text/javascript,${encodeURIComponent(source)}`);
+    const synthetique = ['@elisions l', '@rep ai é', '0des', '0lune', '0maison', '6s', '0école', ''].join('\r\n');
+    const m = new Moteur(synthetique);
+    expect(m.elisions.has('l')).toBe(true);
+    expect([...m.mots].every((mot) => !mot.includes('\r'))).toBe(true);
+    expect(m.verifier("L'école des maisons.")).toEqual([]);
+    expect(m.verifier('Les maizons.').map((f) => f.mot)).toEqual(['maizons']);
+    expect(m.suggerer('maizon')[0]).toBe('maison');
+
+    const dicoCrlf = (await readFile(`${RACINE}/correcteur/mots-fr-7.5.txt`, 'utf8')).replace(/\r?\n/g, '\r\n');
+    const mComplet = new Moteur(dicoCrlf);
+    expect(mComplet.elisions.has('ç')).toBe(true);
+    expect(mComplet.verifier("L'ami jusqu'à demain, ça va.")).toEqual([]);
+  });
+
+  test('l’index replié du moteur est préparé de façon paresseuse à la première suggestion', async () => {
+    const source = await readFile(`${RACINE}/correcteur/moteur.js`, 'utf8');
+    const { Moteur } = await import(`data:text/javascript,${encodeURIComponent(source)}`);
+    const m = new Moteur('@elisions l\n0maison\n0une\n');
+    expect(m.replies).toBeNull();
+    expect(m.verifier('Une maizon.').map((f) => f.mot)).toEqual(['maizon']);
+    expect(m.replies).toBeNull();
+    expect(m.suggerer('maizon')[0]).toBe('maison');
+    expect(m.replies).toBeInstanceOf(Map);
   });
 });
 
@@ -248,9 +279,55 @@ test('hors ligne après la première visite : la correction fonctionne toujours'
   await context.setOffline(false);
 });
 
+test('dans l’application, l’index des suggestions est préparé seulement au moment d’une suggestion', async ({ page }) => {
+  const sourceTravailleur = await readFile(`${RACINE}/correcteur/travailleur.js`, 'utf8');
+  expect(sourceTravailleur).not.toContain('setTimeout');
+
+  const dossier = await mkdtemp(join(tmpdir(), 'omni-texte-worker-'));
+  await cp(RACINE, dossier, {
+    recursive: true,
+    filter: (source) => {
+      const chemin = relative(RACINE, source);
+      return !chemin.startsWith('tests') && !chemin.startsWith('.git') && !chemin.split(sep).includes('node_modules');
+    },
+  });
+  const cheminMoteur = join(dossier, 'correcteur', 'moteur.js');
+  const original = await readFile(cheminMoteur, 'utf8');
+  await writeFile(
+    cheminMoteur,
+    `${original}\nconst _indexReplie = Moteur.prototype.indexReplie;\nMoteur.prototype.indexReplie = function () {\n  new BroadcastChannel('test-index-replie').postMessage('appele');\n  return _indexReplie.call(this);\n};\n`,
+    'utf8',
+  );
+  const port = 8160 + test.info().parallelIndex;
+  const serveur = spawn(process.execPath, [join(dossier, 'outils', 'serveur.mjs')], { env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+  try {
+    const adresse = `http://localhost:${port}/omni-texte/`;
+    await expect.poll(() => fetch(adresse).then((r) => r.ok).catch(() => false)).toBe(true);
+    await page.addInitScript(() => {
+      window.__appelsIndexReplie = 0;
+      const canal = new BroadcastChannel('test-index-replie');
+      canal.addEventListener('message', () => {
+        window.__appelsIndexReplie++;
+      });
+    });
+    await page.goto(adresse);
+    await page.locator('#feuille[contenteditable="true"]').waitFor();
+    await ecrire(page, '<p>Une maizon.</p>');
+    await expect.poll(() => soulignes(page)).toEqual(['maizon']);
+    await page.waitForTimeout(1700);
+    expect(await page.evaluate(() => window.__appelsIndexReplie)).toBe(0);
+    await toucher(page, 'maizon');
+    await expect(page.locator('.correcteur-suggestion').first()).toHaveText('maison');
+    expect(await page.evaluate(() => window.__appelsIndexReplie)).toBe(1);
+  } finally {
+    serveur.kill();
+    await rm(dossier, { recursive: true, force: true });
+  }
+});
+
 test('le correcteur est identique dans Omni-Romancier (s’il est à côté)', async () => {
   const autre = `${RACINE}/../omni-romancier/correcteur`;
-  test.skip(!existsSync(autre), 'Omni-Romancier n’est pas à côté de ce dossier');
+  test.skip(!process.env.VERIFIER_ROMANCIER || !existsSync(autre), 'Omni-Romancier non vérifié par défaut (définir VERIFIER_ROMANCIER=1 pour comparer)');
   const ici = (await readdir(`${RACINE}/correcteur`)).sort();
   expect((await readdir(autre)).sort()).toEqual(ici);
   for (const f of ici) {

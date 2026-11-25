@@ -1,0 +1,12 @@
+* text=auto eol=lf
+
+# Fichier d'essai en encodage CP1252 / CRLF : ne jamais convertir
+tests/fichiers/ancien-windows.txt binary
+
+# Fichiers binaires
+*.png binary
+*.webp binary
+*.woff2 binary
+*.docx binary
+*.ico binary
+*.pdf binary
