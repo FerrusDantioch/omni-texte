@@ -81,6 +81,11 @@ test('palette au clavier : flèches, Entrée, Échap', async ({ page }) => {
   await expect(page.locator('#bouton-couleur')).toBeFocused();
 });
 
+test('la page contient un unique titre <h1> structurant pour les lecteurs d’écran', async ({ page }) => {
+  await expect(page.locator('h1')).toHaveCount(1);
+  await expect(page.locator('header h1.visuellement-cache')).toHaveText('Omni-Texte');
+});
+
 test('chaque bouton a un nom en français, l’enregistrement est annoncé', async ({ page }) => {
   const sansNom = await page.evaluate(() =>
     [...document.querySelectorAll('button, select, input:not([type="file"])')]
